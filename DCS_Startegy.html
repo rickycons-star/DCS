@@ -404,7 +404,7 @@ const teams = [
     overall: { rag:"red", note:"Foundation and provisioning are critical gaps. Insights session to be scheduled within 2 weeks." }
   },
   {
-    name: "Meeting & Mobile Services",
+    name: "Meeting & Video",
     df: { rag:"amber",  note:"Data ownership partially defined. Quality SLAs in draft. Lineage covers pipeline layer only — business lineage missing." },
     di: { rag:"amber",  note:"Catalogue coverage approximately 65%. Ownership fields populated for majority of datasets." },
     ap: { rag:"pending", note:"Provisioning assessment session scheduled for next sprint. Prior data suggests manual-only process." },
@@ -516,16 +516,16 @@ const domains = [
 // ══════════════════════════════════════════════════════════════
 const productFunctions = [
   "Capture","Controls","Backbone","Workspace",
-  "Telephony","Meeting &\nMobile","Contact\nCentre","Amazon\nConnect"
+  "Telephony","Meeting &\nVideo","Contact\nCentre","Amazon\nConnect"
 ];
 
 const configThemes = [
   {
-    theme: "Baseline Management",
+    theme: "Golden Source & Storage ",
     color: "#4A2A7A",
     rows: [
       {
-        comp: "Environment baselines",
+        comp: "Golden Source Storage",
         desc: "Documented config baselines exist for all environments (dev, UAT, prod) and are version-controlled.",
         cells: [
           { rag:"amber", note:"Prod only. Dev/UAT unbaselined." },
@@ -569,7 +569,7 @@ const configThemes = [
     ]
   },
   {
-    theme: "Drift Detection",
+    theme: "Automation & Deployment",
     color: "#1A4D58",
     rows: [
       {
