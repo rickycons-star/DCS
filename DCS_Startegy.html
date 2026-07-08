@@ -1,49 +1,98 @@
-1. Data Producer / Acquisition
+<!-- ════════════════════════════════════════════════════
+     PANEL — DATA FOUNDATION (sub-tabbed)
+════════════════════════════════════════════════════ -->
+<div id="df" class="panel">
+  <div class="sub-nav">
+    <button class="sub-btn active" onclick="showSub('df-vision',this)">Vision</button>
+    <button class="sub-btn" onclick="showSub('df-analysis',this)">Discovery Analysis</button>
+    <button class="sub-btn" onclick="showSub('df-arch',this)">Target State Architecture</button>
+  </div>
 
-Vendor onboarding & sourcing (contracts, licensing, entitlements)
-Producer patterns & data contracts (schemas, SLAs, versioning)
-Ingestion & connectivity (APIs, feeds, files, streaming)
-Source data quality validation (at the point of entry, not downstream)
+  <!-- SUB-TAB 1: VISION -->
+  <div id="df-vision" class="sub-panel active">
+    <div class="card">
+      <div class="card-title">Data Foundation — Vision Statement</div>
+      <div class="vision-statement" style="background:#1B5E8A;">
+        <div class="vision-label" style="color:#A8CBE8;">Vision</div>
+        "To establish a trusted data foundation across all product platforms — where every dataset has a named owner, quality is measured and enforced, lineage is documented end-to-end, and data is classified and governed by design — enabling teams to build with confidence and the firm to meet its regulatory obligations without manual overhead."
+      </div>
+      <div class="vision-pillars">
+        <div class="vision-pillar" style="border-top-color:#1B5E8A;">
+          <div class="vision-pillar-title" style="color:#1B5E8A;">Ownership & Accountability</div>
+          <div class="vision-pillar-body">Every dataset has a named Data Owner accountable for quality and access decisions, published in the data catalogue and reviewed annually.</div>
+        </div>
+        <div class="vision-pillar" style="border-top-color:#1B5E8A;">
+          <div class="vision-pillar-title" style="color:#1B5E8A;">Quality by Default</div>
+          <div class="vision-pillar-body">Quality SLAs are defined per critical dataset, monitored automatically, and enforced through alerting and remediation workflows — not discovered in production.</div>
+        </div>
+        <div class="vision-pillar" style="border-top-color:#1B5E8A;">
+          <div class="vision-pillar-title" style="color:#1B5E8A;">Lineage & Transparency</div>
+          <div class="vision-pillar-body">Every data element is traceable from source to consumption. Lineage is captured automatically and accessible to all stakeholders, including audit.</div>
+        </div>
+        <div class="vision-pillar" style="border-top-color:#1B5E8A;">
+          <div class="vision-pillar-title" style="color:#1B5E8A;">Classification & Privacy</div>
+          <div class="vision-pillar-body">All data is classified using the enterprise taxonomy at ingestion. PII is identified, protected and governed in line with regulatory obligations.</div>
+        </div>
+        <div class="vision-pillar" style="border-top-color:#1B5E8A;">
+          <div class="vision-pillar-title" style="color:#1B5E8A;">Compliance by Design</div>
+          <div class="vision-pillar-body">Regulatory controls — retention, residency, auditability — are embedded into the foundation layer, so product teams inherit compliance rather than build it.</div>
+        </div>
+        <div class="vision-pillar" style="border-top-color:#1B5E8A;">
+          <div class="vision-pillar-title" style="color:#1B5E8A;">Continuous Improvement</div>
+          <div class="vision-pillar-body">Foundation maturity is baselined per team, measured quarterly, and improved iteratively — with progress visible on the portfolio heatmap.</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-2. Data Governance
+  <!-- SUB-TAB 2: DISCOVERY ANALYSIS -->
+  <div id="df-analysis" class="sub-panel">
+    <div id="df-analysis-content"></div>
+  </div>
 
-Ownership & stewardship (Data Owners, Stewards, Custodians)
-Privacy (PII identification, consent, GDPR/data subject rights, anonymisation/masking)
-Classification & sensitivity (taxonomy, regulatory tiering, confidentiality labels)
-Policy management (retention, residency, usage rights, purpose limitation)
-Regulatory compliance (BCBS 239, DORA, SOX, records management)
+  <!-- SUB-TAB 3: TARGET STATE ARCHITECTURE -->
+  <div id="df-arch" class="sub-panel">
+    <div class="card">
+      <div class="card-title">Data Foundation — Target State Architecture</div>
+      <div class="card-sub">The target architecture establishes governance, quality and lineage as platform services that every product function inherits — rather than capabilities each team builds independently.</div>
 
-3. Data Hydration / Integration
+      <div class="arch-flow" style="margin-bottom:20px;">
+        <div class="arch-flow-title">End-to-End Foundation Flow</div>
+        <div class="arch-steps">
+          <div class="arch-step" style="background:#1B5E8A;">Classify<div class="arch-step-sub">Taxonomy at ingestion<br>PII detection</div></div>
+          <div class="arch-step" style="background:#2A6D9A;">Own<div class="arch-step-sub">Named Data Owner<br>Published accountability</div></div>
+          <div class="arch-step" style="background:#0D4A7A;">Measure<div class="arch-step-sub">Quality SLAs<br>Automated monitoring</div></div>
+          <div class="arch-step" style="background:#3A7DAA;">Trace<div class="arch-step-sub">Automated lineage<br>Source to consumption</div></div>
+          <div class="arch-step" style="background:#062A4A;">Govern<div class="arch-step-sub">Policy enforcement<br>Audit & reporting</div></div>
+        </div>
+      </div>
 
-Pipeline orchestration (scheduling, dependencies, failure handling)
-Transformation & enrichment (standardisation, reference data, derivations)
-Data quality in flight (validation rules, reconciliation, exception handling)
-Lineage capture (source-to-consumption traceability, automated where possible)
-
-4. Data Storage & Platform
-
-Storage architecture (lake, warehouse, operational stores)
-Environment & infrastructure provisioning (your Auto Provisioning domain)
-Config management (baselines, drift, change control — your Config domain)
-Resilience & availability (backup, recovery, RTO/RPO)
-
-5. Data Access & Security
-
-Access control (RBAC/ABAC, entitlements, Immuta policy enforcement)
-Authentication & audit (who accessed what, when, why)
-Encryption (at rest, in transit, key management)
-Data sharing agreements (internal cross-LOB, external)
-
-6. Data Consumption & Value
-
-Discovery & catalogue (findability, metadata, business glossary)
-Insights & reporting (dashboards, KPIs — your Insights domain)
-Data products (published, versioned, SLA-backed assets)
-AI/ML enablement (feature stores, model-ready data, training data governance)
-
-7. Data Retirement / End of Life (the one most frameworks forget)
-
-Retention enforcement (automated deletion at policy expiry)
-Archival (regulatory hold, legal discovery access)
-Decommissioning (vendor offboarding, source retirement, downstream impact)
-Disposal evidence (proof of deletion for regulators)
+      <div class="arch-grid">
+        <div class="arch-card" style="border-top-color:#1B5E8A;">
+          <div class="arch-card-title" style="color:#1B5E8A;">Ownership Registry</div>
+          <div class="arch-card-body">Every dataset registered with a named Data Owner, Data Steward and Custodian. Ownership held in the enterprise catalogue, synced from HR systems, and re-attested annually. Unowned data is flagged and escalated.</div>
+        </div>
+        <div class="arch-card" style="border-top-color:#1B5E8A;">
+          <div class="arch-card-title" style="color:#1B5E8A;">Quality Framework</div>
+          <div class="arch-card-body">Standard quality dimensions (completeness, accuracy, timeliness, consistency) with SLAs per critical dataset. Automated rules run in-pipeline; breaches alert the Data Steward and open a remediation ticket automatically.</div>
+        </div>
+        <div class="arch-card" style="border-top-color:#1B5E8A;">
+          <div class="arch-card-title" style="color:#1B5E8A;">Lineage Service</div>
+          <div class="arch-card-body">Lineage captured automatically from pipeline metadata — no manual documentation. Business and technical lineage stitched together in the catalogue, queryable by audit, compliance and engineering.</div>
+        </div>
+        <div class="arch-card" style="border-top-color:#1B5E8A;">
+          <div class="arch-card-title" style="color:#1B5E8A;">Classification Engine</div>
+          <div class="arch-card-body">Enterprise taxonomy applied at ingestion with automated PII detection and sensitivity scoring. Classification drives downstream access policy in Immuta — classify once, enforce everywhere.</div>
+        </div>
+        <div class="arch-card" style="border-top-color:#1B5E8A;">
+          <div class="arch-card-title" style="color:#1B5E8A;">Policy & Retention</div>
+          <div class="arch-card-body">Retention, residency and usage policies defined centrally and enforced automatically. Data past retention is flagged for disposal with evidence retained for regulators.</div>
+        </div>
+        <div class="arch-card" style="border-top-color:#1B5E8A;">
+          <div class="arch-card-title" style="color:#1B5E8A;">Foundation Scorecard</div>
+          <div class="arch-card-body">Per-team maturity scorecard covering ownership coverage, SLA adherence, lineage completeness and classification coverage. Published monthly and feeds the portfolio heatmap.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
