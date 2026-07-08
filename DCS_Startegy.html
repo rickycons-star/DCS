@@ -1,6 +1,49 @@
-<div class="card">
-  <div class="card-title">Target State Architecture Diagram</div>
-  <img src="architecture-diagram.png"
-       alt="Config Management target state architecture"
-       style="width:100%; max-width:1000px; border:0.5px solid #E2D8CE; border-radius:8px;">
-</div>
+1. Data Producer / Acquisition
+
+Vendor onboarding & sourcing (contracts, licensing, entitlements)
+Producer patterns & data contracts (schemas, SLAs, versioning)
+Ingestion & connectivity (APIs, feeds, files, streaming)
+Source data quality validation (at the point of entry, not downstream)
+
+2. Data Governance
+
+Ownership & stewardship (Data Owners, Stewards, Custodians)
+Privacy (PII identification, consent, GDPR/data subject rights, anonymisation/masking)
+Classification & sensitivity (taxonomy, regulatory tiering, confidentiality labels)
+Policy management (retention, residency, usage rights, purpose limitation)
+Regulatory compliance (BCBS 239, DORA, SOX, records management)
+
+3. Data Hydration / Integration
+
+Pipeline orchestration (scheduling, dependencies, failure handling)
+Transformation & enrichment (standardisation, reference data, derivations)
+Data quality in flight (validation rules, reconciliation, exception handling)
+Lineage capture (source-to-consumption traceability, automated where possible)
+
+4. Data Storage & Platform
+
+Storage architecture (lake, warehouse, operational stores)
+Environment & infrastructure provisioning (your Auto Provisioning domain)
+Config management (baselines, drift, change control — your Config domain)
+Resilience & availability (backup, recovery, RTO/RPO)
+
+5. Data Access & Security
+
+Access control (RBAC/ABAC, entitlements, Immuta policy enforcement)
+Authentication & audit (who accessed what, when, why)
+Encryption (at rest, in transit, key management)
+Data sharing agreements (internal cross-LOB, external)
+
+6. Data Consumption & Value
+
+Discovery & catalogue (findability, metadata, business glossary)
+Insights & reporting (dashboards, KPIs — your Insights domain)
+Data products (published, versioned, SLA-backed assets)
+AI/ML enablement (feature stores, model-ready data, training data governance)
+
+7. Data Retirement / End of Life (the one most frameworks forget)
+
+Retention enforcement (automated deletion at policy expiry)
+Archival (regulatory hold, legal discovery access)
+Decommissioning (vendor offboarding, source retirement, downstream impact)
+Disposal evidence (proof of deletion for regulators)
