@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data & Core Services — Discovery Assessment</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #F4EFEA; color: #2C2C2C; font-size: 13px; }
+
+.page-header { background: #6B4226; color: #fff; padding: 18px 40px; display: flex; align-items: center; justify-content: space-between; }
+.page-header h1 { font-size: 19px; font-weight: 500; }
+.page-header .sub { font-size: 11px; color: #C4A882; margin-top: 3px; }
+
+.nav { background: #fff; border-bottom: 1px solid #E2D8CE; padding: 0 40px; display: flex; gap: 2px; overflow-x: auto; position: sticky; top: 0; z-index: 100; }
+.nav-btn { padding: 10px 14px; font-size: 12px; color: #6B6B6B; cursor: pointer; border: none; background: none; white-space: nowrap; border-bottom: 2px solid transparent; transition: all 0.15s; }
+.nav-btn:hover { color: #6B4226; }
+.nav-btn.active { color: #6B4226; border-bottom-color: #6B4226; font-weight: 600; }
+
+.content { max-width: 1300px; margin: 0 auto; padding: 24px 40px; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+.card { background: #fff; border: 0.5px solid #E2D8CE; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+.card-title { font-size: 15px; font-weight: 600; color: #2C2C2C; margin-bottom: 4px; }
+.card-sub { font-size: 11px; color: #6B6B6B; font-style: italic; margin-bottom: 16px; line-height: 1.5; }
+
+.rag { display: inline-block; border-radius: 4px; font-size: 10px; font-weight: 600; padding: 2px 9px; min-width: 58px; text-align: center; }
+.rag-green   { background: #E8F5EC; color: #1A4D2A; border: 0.5px solid #1A4D2A; }
+.rag-amber   { background: #FDF3E3; color: #7A4A0A; border: 0.5px solid #7A4A0A; }
+.rag-red     { background: #FAEAEA; color: #7B2A1A; border: 0.5px solid #7B2A1A; }
+.rag-pending { background: #F7F4F1; color: #6B6B6B; border: 0.5px solid #D4C9B8; }
+
+.rag-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; margin-right: 5px; vertical-align: middle; position: relative; top: -1px; }
+.rag-dot-green   { background: #1A9A4A; }
+.rag-dot-amber   { background: #C87800; }
+.rag-dot-red     { background: #C0392B; }
+.rag-dot-pending { background: #B0A898; }
+
+.legend { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 16px; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #6B6B6B; }
+.legend-swatch { width: 20px; height: 14px; border-radius: 3px; }
+
+.heatmap-wrap { overflow-x: auto; }
+.heatmap-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 780px; }
+.heatmap-table th { padding: 8px 10px; font-weight: 500; font-size: 11px; text-align: center; color: #fff; }
+.heatmap-table th.team-col { text-align: left; background: #2C2C2C; min-width: 170px; }
+.heatmap-table td { padding: 0; border-bottom: 0.5px solid #E2D8CE; vertical-align: top; }
+.heatmap-table td.team-name { font-weight: 600; color: #2C2C2C; padding: 10px 10px 6px; vertical-align: top; }
+.heatmap-table tr:nth-child(even) td { background: #F9F6F3; }
+.heatmap-table tr:hover td { background: #F0EAE3 !important; }
+.heatmap-table tfoot tr td { background: #EDE7DF !important; font-weight: 600; }
+.rag-cell-inner { padding: 8px 8px 8px; text-align: center; }
+.rag-note { font-size: 9.5px; color: #5A4A3A; text-align: left; margin-top: 5px; line-height: 1.4; padding: 0 2px; font-style: italic; }
+.heatmap-table tfoot .rag-note { display: none; }
+
+.q-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.q-table th { padding: 8px 12px; font-weight: 500; font-size: 11px; text-align: left; }
+.q-table th.curr-hdr { background: #5A3A1A; color: #fff; }
+.q-table th.tgt-hdr  { background: #1A4D58; color: #fff; }
+.q-table th.q-hdr    { background: #2C2C2C; color: #fff; width: 28%; }
+.q-table th.gap-hdr  { background: #2C2C2C; color: #fff; width: 80px; text-align: center; }
+.q-table td { padding: 10px 12px; border-bottom: 0.5px solid #E2D8CE; vertical-align: top; line-height: 1.5; }
+.q-table td.curr-cell { background: #FFF6EE; }
+.q-table td.tgt-cell  { background: #EDF5F7; color: #1A4D58; }
+.q-table td.gap-cell  { text-align: center; vertical-align: middle; }
+.q-table tr:nth-child(even) td.q-cell { background: #F7F4F1; }
+
+.domain-hdr { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.domain-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+.domain-name { font-size: 16px; font-weight: 600; }
+.domain-desc { font-size: 11px; color: #6B6B6B; font-style: italic; }
+
+.sub-nav { display: flex; gap: 6px; margin-bottom: 20px; border-bottom: 1px solid #E2D8CE; padding-bottom: 0; }
+.sub-btn { padding: 8px 18px; font-size: 12px; color: #6B6B6B; cursor: pointer; border: none; background: none; white-space: nowrap; border-bottom: 3px solid transparent; font-weight: 500; transition: all 0.15s; }
+.sub-btn:hover { color: #6B4226; }
+.sub-btn.active { color: #6B4226; border-bottom-color: #6B4226; font-weight: 700; }
+.sub-panel { display: none; }
+.sub-panel.active { display: block; }
+
+.vision-statement { color: #fff; border-radius: 8px; padding: 24px 30px; margin-bottom: 20px; font-size: 15px; line-height: 1.7; font-style: italic; }
+.vision-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; opacity: 0.75; }
+.vision-pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 20px; }
+.vision-pillar { background: #fff; border-radius: 6px; padding: 14px; border-top: 3px solid; }
+.vision-pillar-title { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+.vision-pillar-body { font-size: 11px; color: #5A5A5A; line-height: 1.5; }
+
+.config-wrap { overflow-x: auto; }
+.config-table { border-collapse: collapse; font-size: 11px; min-width: 1100px; width: 100%; }
+.config-table th { padding: 8px 10px; font-weight: 600; font-size: 10px; text-align: center; color: #fff; white-space: nowrap; position: sticky; top: 0; z-index: 10; }
+.config-table th.theme-hdr  { background: #2C2C2C; text-align: left; min-width: 110px; position: sticky; left: 0; z-index: 20; }
+.config-table th.comp-hdr   { background: #3A2A3A; text-align: left; min-width: 130px; }
+.config-table th.desc-hdr   { background: #3A2A3A; text-align: left; min-width: 160px; }
+.config-table th.product-hdr { background: #4A2A7A; min-width: 100px; max-width: 115px; }
+.config-table td { padding: 8px 10px; border-bottom: 0.5px solid #E2D8CE; border-right: 0.5px solid #E2D8CE; vertical-align: top; line-height: 1.45; }
+.config-table td.theme-cell { font-weight: 700; font-size: 11px; color: #fff; text-align: center; vertical-align: middle; position: sticky; left: 0; z-index: 5; writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg); padding: 14px 8px; letter-spacing: 0.05em; }
+.config-table td.comp-cell { font-weight: 600; color: #2C2C2C; background: #F7F4F1; font-size: 11px; }
+.config-table td.desc-cell { color: #4A3A2A; background: #FDFBF9; font-size: 10.5px; }
+.config-table td.product-cell { background: #fff; font-size: 10px; color: #2C2C2C; line-height: 1.4; }
+.config-table tr:nth-child(3n) td { border-bottom: 1.5px solid #C4A882; }
+.pcell { display: flex; align-items: flex-start; gap: 5px; }
+.pcell-text { flex: 1; font-size: 10px; color: #2C2C2C; line-height: 1.4; }
+
+.arch-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+.arch-card { background: #fff; border: 0.5px solid #E2D8CE; border-radius: 8px; padding: 16px; border-top: 4px solid; }
+.arch-card-title { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+.arch-card-body { font-size: 11px; color: #5A5A5A; line-height: 1.5; }
+.arch-flow { background: #F7F4F1; border: 0.5px solid #E2D8CE; border-radius: 8px; padding: 18px; margin-top: 4px; }
+.arch-flow-title { font-size: 12px; font-weight: 700; color: #2C2C2C; margin-bottom: 12px; }
+.arch-steps { display: flex; gap: 0; align-items: stretch; flex-wrap: wrap; }
+.arch-step { flex: 1; min-width: 100px; color: #fff; padding: 10px 12px; font-size: 10px; font-weight: 600; text-align: center; position: relative; }
+.arch-step:not(:last-child)::after { content: '▶'; position: absolute; right: -10px; top: 50%; transform: translateY(-50%); color: #C4A882; font-size: 12px; z-index: 1; }
+.arch-step-sub { font-size: 9px; font-weight: 400; margin-top: 3px; opacity: 0.75; }
+
+.step { display: flex; gap: 14px; margin-bottom: 12px; align-items: flex-start; }
+.step-num { width: 36px; height: 36px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; color: #fff; flex-shrink: 0; }
+.step-body { flex: 1; background: #F7F4F1; border: 0.5px solid #E2D8CE; border-radius: 6px; padding: 10px 14px; }
+.step-title { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+.step-desc { font-size: 12px; color: #6B6B6B; line-height: 1.5; }
+
+/* HOME PAGE */
+.hero { background: #6B4226; border-radius: 12px; padding: 44px 48px; margin-bottom: 20px; color: #fff; display: flex; align-items: center; gap: 40px; flex-wrap: wrap; }
+.hero-text { flex: 1; min-width: 300px; }
+.hero-label { font-size: 11px; font-weight: 700; color: #C4A882; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 12px; }
+.hero-title { font-size: 34px; font-weight: 500; line-height: 1.2; margin-bottom: 16px; }
+.hero-body { font-size: 14px; color: #E8DCC8; line-height: 1.7; max-width: 560px; }
+.hero-graphic { flex-shrink: 0; }
+.home-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+.home-card { background: #fff; border: 0.5px solid #E2D8CE; border-radius: 8px; padding: 18px; border-top: 4px solid; cursor: pointer; transition: box-shadow 0.15s, transform 0.15s; }
+.home-card:hover { box-shadow: 0 4px 14px rgba(107,66,38,0.12); transform: translateY(-2px); }
+.home-card-title { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+.home-card-body { font-size: 11.5px; color: #5A5A5A; line-height: 1.55; }
+.home-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.home-stat { background: #fff; border: 0.5px solid #E2D8CE; border-radius: 8px; padding: 18px; text-align: center; }
+.home-stat-num { font-size: 30px; font-weight: 600; color: #6B4226; }
+.home-stat-lbl { font-size: 11px; color: #6B6B6B; margin-top: 4px; }
+
+@media print { .nav, .page-header { display: none; } .panel { display: block !important; page-break-after: always; } }
+@media (max-width: 700px) {
+  .content { padding: 12px 14px; }
+  .vision-pillars, .arch-grid, .home-grid { grid-template-columns: 1fr; }
+  .home-stats { grid-template-columns: repeat(2, 1fr); }
+  .hero { padding: 28px 24px; }
+}
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div>
+    <div class="sub">JPMorganChase · Data & Core Services · CONFIDENTIAL</div>
+    <h1>Data & Core Services — Discovery Assessment</h1>
+  </div>
+  <div style="font-size:11px;color:#C4A882;text-align:right;">8 product functions · 5 assessment domains</div>
+</div>
+
+<div class="nav">
+  <button class="nav-btn active" onclick="showPanel('home',this)">Home</button>
+  <button class="nav-btn" onclick="showPanel('heatmap',this)">Portfolio Heatmap</button>
+  <button class="nav-btn" onclick="showPanel('df',this)">Data Foundation</button>
+  <button class="nav-btn" onclick="showPanel('di',this)">Data Inventory</button>
+  <button class="nav-btn" onclick="showPanel('ap',this)">Auto Provisioning</button>
+  <button class="nav-btn" onclick="showPanel('cm',this)">Config Management</button>
+  <button class="nav-btn" onclick="showPanel('ins',this)">Insights & Reporting</button>
+  <button class="nav-btn" onclick="showPanel('howto',this)">How to Use</button>
+</div>
+
+<div class="content">
+
+<!-- ════════════ HOME ════════════ -->
+<div id="home" class="panel active">
+  <div class="hero">
+    <div class="hero-text">
+      <div class="hero-label">Employee Computing Platform</div>
+      <div class="hero-title">Data &amp; Core Services</div>
+      <div class="hero-body">
+        We are the team accountable for the department's data foundations and core platform services.
+        Our remit spans the enterprise data platforms, APIs and integration frameworks that enable
+        interoperability across product functions — alongside our core products: Insights, Config Drift
+        and Auto Provisioning. Operating as a regulated bank within a technology organisation, we embed
+        governance, quality and compliance into the platform itself, so every product team builds faster
+        on foundations they can trust.
+      </div>
+    </div>
+    <div class="hero-graphic">
+      <svg width="220" height="220" viewBox="0 0 220 220" role="img" aria-label="Layered data platform graphic">
+        <rect x="30" y="150" width="160" height="34" rx="6" fill="#4A2C14"/>
+        <rect x="30" y="108" width="160" height="34" rx="6" fill="#8B5A2A"/>
+        <rect x="30" y="66"  width="160" height="34" rx="6" fill="#B07840"/>
+        <rect x="30" y="24"  width="160" height="34" rx="6" fill="#D4A96A"/>
+        <text x="110" y="171" text-anchor="middle" fill="#E8DCC8" font-size="11" font-weight="600" font-family="Arial">Ingest</text>
+        <text x="110" y="129" text-anchor="middle" fill="#F4EBDD" font-size="11" font-weight="600" font-family="Arial">Store &amp; Govern</text>
+        <text x="110" y="87"  text-anchor="middle" fill="#4A2C14" font-size="11" font-weight="600" font-family="Arial">Serve</text>
+        <text x="110" y="45"  text-anchor="middle" fill="#4A2C14" font-size="11" font-weight="600" font-family="Arial">Consume</text>
+        <line x1="200" y1="30" x2="200" y2="184" stroke="#C4A882" stroke-width="2" stroke-dasharray="4 4"/>
+        <text x="212" y="110" text-anchor="middle" fill="#C4A882" font-size="9" font-family="Arial" transform="rotate(90 212 110)">Governance</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="home-grid">
+    <div class="home-card" style="border-top-color:#1B5E8A;" onclick="navTo('df')">
+      <div class="home-card-title" style="color:#1B5E8A;">Data Foundation</div>
+      <div class="home-card-body">Ownership, quality SLAs, lineage and classification — the governance bedrock every product function builds on.</div>
+    </div>
+    <div class="home-card" style="border-top-color:#0D6B5A;" onclick="navTo('di')">
+      <div class="home-card-title" style="color:#0D6B5A;">Data Inventory</div>
+      <div class="home-card-body">Cataloguing, metadata and discoverability — making data findable, understood and requestable across the department.</div>
+    </div>
+    <div class="home-card" style="border-top-color:#7A4A00;" onclick="navTo('ap')">
+      <div class="home-card-title" style="color:#7A4A00;">Auto Provisioning</div>
+      <div class="home-card-body">Self-service, policy-governed provisioning of environments and access — from days of manual effort to hours.</div>
+    </div>
+    <div class="home-card" style="border-top-color:#4A2A7A;" onclick="navTo('cm')">
+      <div class="home-card-title" style="color:#4A2A7A;">Config Management</div>
+      <div class="home-card-body">Baselines, drift detection and automated remediation — eliminating config drift as a source of incidents and risk.</div>
+    </div>
+    <div class="home-card" style="border-top-color:#6B4226;" onclick="navTo('ins')">
+      <div class="home-card-title" style="color:#6B4226;">Insights &amp; Reporting</div>
+      <div class="home-card-body">Dashboards, KPIs and data products — giving teams and leadership a trusted, self-service view of performance.</div>
+    </div>
+    <div class="home-card" style="border-top-color:#2C2C2C;" onclick="navTo('heatmap')">
+      <div class="home-card-title" style="color:#2C2C2C;">Portfolio Heatmap</div>
+      <div class="home-card-body">The single view of current state maturity across all 8 product functions and 5 domains — updated after every discovery session.</div>
+    </div>
+  </div>
+
+  <div class="home-stats">
+    <div class="home-stat"><div class="home-stat-num">8</div><div class="home-stat-lbl">Product functions in scope</div></div>
+    <div class="home-stat"><div class="home-stat-num">5</div><div class="home-stat-lbl">Assessment domains</div></div>
+    <div class="home-stat"><div class="home-stat-num">3</div><div class="home-stat-lbl">Core products owned</div></div>
+    <div class="home-stat"><div class="home-stat-num">Q4 2026</div><div class="home-stat-lbl">Phase 2 target completion</div></div>
+  </div>
+</div>
+
+<!-- ════════════ HEATMAP ════════════ -->
+<div id="heatmap" class="panel">
+  <div class="card">
+    <div class="card-title">Portfolio Heatmap — Current State RAG by Domain</div>
+    <div class="card-sub">One row per product function. RAG status agreed with Product Lead after each discovery session. Each cell includes a brief explanatory note. The domain summary row reflects the weakest status across all assessed teams.</div>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:#E8F5EC;border:0.5px solid #1A4D2A;"></span>Green — meets target state</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#FDF3E3;border:0.5px solid #7A4A0A;"></span>Amber — partial / in progress</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#FAEAEA;border:0.5px solid #7B2A1A;"></span>Red — significant gap to target</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#F7F4F1;border:0.5px solid #D4C9B8;"></span>Pending — session not yet held</div>
+    </div>
+    <div class="heatmap-wrap">
+      <table class="heatmap-table">
+        <thead>
+          <tr>
+            <th class="team-col">Product Function</th>
+            <th style="background:#1B5E8A;">Data<br>Foundation</th>
+            <th style="background:#0D6B5A;">Data<br>Inventory</th>
+            <th style="background:#7A4A00;">Auto<br>Provisioning</th>
+            <th style="background:#4A2A7A;">Config<br>Management</th>
+            <th style="background:#6B4226;">Insights &amp;<br>Reporting</th>
+            <th style="background:#2C2C2C;">Overall</th>
+          </tr>
+        </thead>
+        <tbody id="heatmap-body"></tbody>
+        <tfoot id="heatmap-foot"></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ DOMAIN PANELS (sub-tabbed, built by JS) ════════════ -->
+<div id="df" class="panel"></div>
+<div id="di" class="panel"></div>
+<div id="ap" class="panel"></div>
+<div id="cm" class="panel"></div>
+<div id="ins" class="panel"></div>
+
+<!-- ════════════ HOW TO USE ════════════ -->
+<div id="howto" class="panel">
+  <div class="card">
+    <div class="card-title">How to Use These Templates</div>
+    <div class="card-sub">A guide for discovery session facilitators and programme team members.</div>
+    <div class="step"><div class="step-num" style="background:#6B4226;">1</div><div class="step-body"><div class="step-title">Before the session</div><div class="step-desc">Share the domain questions with the Product Lead 5 days in advance. Ask them to nominate a data lead and engineering lead to join. Confirm the session is 90 minutes.</div></div></div>
+    <div class="step"><div class="step-num" style="background:#1A4D58;">2</div><div class="step-body"><div class="step-title">During the session</div><div class="step-desc">Work through each domain in order. Capture current state verbatim — do not interpret or adjust in the session. Mark questions Red / Amber / Green provisionally.</div></div></div>
+    <div class="step"><div class="step-num" style="background:#7A4A00;">3</div><div class="step-body"><div class="step-title">After the session (within 5 days)</div><div class="step-desc">Write up current and target state for each question. Share the completed domain views with the Product Lead for RAG sign-off before updating the portfolio heatmap.</div></div></div>
+    <div class="step"><div class="step-num" style="background:#1B5E8A;">4</div><div class="step-body"><div class="step-title">Update the heatmap</div><div class="step-desc">Once RAG is agreed per domain, update the heatmap for that team. The heatmap is the source of truth for programme leadership reporting.</div></div></div>
+    <div class="step"><div class="step-num" style="background:#4A2A7A;">5</div><div class="step-body"><div class="step-title">Delta analysis</div><div class="step-desc">After all sessions complete, review each domain across all teams to identify the most common gaps. These become the priority workstreams for Phase 3 delivery.</div></div></div>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<script>
+// ══════════════════════════════════════════
+// HEATMAP DATA
+// ══════════════════════════════════════════
+const teams = [
+  { name:"Capture",
+    df:{rag:"amber",note:"Data ownership defined for primary datasets but lineage documentation remains incomplete across capture pipelines."},
+    di:{rag:"amber",note:"Core datasets catalogued; metadata quality inconsistent and access request process still manual."},
+    ap:{rag:"red",note:"Provisioning is fully manual — no self-service capability. Average lead time 4+ days with no audit trail."},
+    cm:{rag:"amber",note:"Production baselines exist but UAT and dev environments are unbaselined. Drift detection not in place."},
+    ins:{rag:"green",note:"Self-service dashboards in use by the team. KPIs agreed and reviewed monthly with leadership."},
+    overall:{rag:"amber",note:"Strong on insights; provisioning and config management are priority areas for remediation."} },
+  { name:"Controls",
+    df:{rag:"green",note:"Formal data ownership in place. Quality SLAs defined and measured. Lineage documented end-to-end."},
+    di:{rag:"green",note:"100% of critical datasets catalogued in Collibra with accurate metadata and ownership mapped."},
+    ap:{rag:"amber",note:"RBAC partially implemented. Some environments still provisioned manually with inconsistent access controls."},
+    cm:{rag:"green",note:"Baselines defined across all environments. Drift detection in place; remediation process established."},
+    ins:{rag:"amber",note:"Dashboards available but not widely adopted. Leadership reporting is email-based rather than interactive."},
+    overall:{rag:"green",note:"Most mature function assessed to date. Auto provisioning is the key remaining gap."} },
+  { name:"Backbone",
+    df:{rag:"red",note:"No formal data owners. Quality issues resolved reactively. No SLAs or lineage documentation in place."},
+    di:{rag:"amber",note:"Partial catalogue coverage (~60%). Data dictionary exists but is outdated and not linked to the catalogue."},
+    ap:{rag:"red",note:"All provisioning manual via senior engineers. No RBAC, no audit log, no deprovisioning process."},
+    cm:{rag:"red",note:"No baselines defined. Drift discovered only via incidents. No change tracking or approval workflow."},
+    ins:{rag:"red",note:"No self-service dashboards. No agreed KPIs. Leadership reporting is ad hoc and infrequent."},
+    overall:{rag:"red",note:"Significant gaps across all domains. Backbone is the highest-priority remediation target in Phase 3."} },
+  { name:"Workspace",
+    df:{rag:"amber",note:"Data owners nominated but accountability not formally documented. Quality SLAs partially defined."},
+    di:{rag:"green",note:"Catalogue well maintained with strong metadata coverage. Self-service discovery available to the team."},
+    ap:{rag:"amber",note:"Environment provisioning partially automated. Access requests still manual for some platform components."},
+    cm:{rag:"amber",note:"Production baseline documented. Change tracking in Jira but not consistently followed for emergency changes."},
+    ins:{rag:"green",note:"Strong dashboard adoption. KPIs baselined and tracked. Monthly report shared with senior leadership."},
+    overall:{rag:"amber",note:"Good baseline in foundation and insights. Config and provisioning automation are next priorities."} },
+  { name:"Telephony",
+    df:{rag:"red",note:"No data ownership model. Data quality managed informally. No lineage or classification in place."},
+    di:{rag:"amber",note:"Some datasets catalogued but coverage is low (~40%). No formal data dictionary maintained."},
+    ap:{rag:"red",note:"Provisioning entirely manual. No RBAC. Deprovisioning relies on manager self-reporting with no enforcement."},
+    cm:{rag:"amber",note:"Basic baselines exist for production. No drift detection. Change approvals informal and inconsistently applied."},
+    ins:{rag:"pending",note:"Discovery session not yet held. Data from prior engagement suggests minimal dashboard capability."},
+    overall:{rag:"red",note:"Foundation and provisioning are critical gaps. Insights session to be scheduled within 2 weeks."} },
+  { name:"Meeting & Mobile Services",
+    df:{rag:"amber",note:"Data ownership partially defined. Quality SLAs in draft. Lineage covers pipeline layer only — business lineage missing."},
+    di:{rag:"amber",note:"Catalogue coverage approximately 65%. Ownership fields populated for majority of datasets."},
+    ap:{rag:"pending",note:"Provisioning assessment session scheduled for next sprint. Prior data suggests manual-only process."},
+    cm:{rag:"amber",note:"Baselines defined for production and UAT. Drift monitoring in place but remediation is manual."},
+    ins:{rag:"amber",note:"Dashboards exist but KPIs not formally agreed. Reporting cadence irregular."},
+    overall:{rag:"amber",note:"Solid progress across most domains. Auto provisioning assessment pending — likely a gap area."} },
+  { name:"Contact Centre",
+    df:{rag:"red",note:"No formal data governance. Quality issues frequent and untracked. No lineage or sensitivity classification."},
+    di:{rag:"red",note:"No data catalogue. Discovery relies entirely on tribal knowledge. No data dictionary maintained."},
+    ap:{rag:"red",note:"Manual provisioning with no oversight. Access persists indefinitely after role changes."},
+    cm:{rag:"red",note:"No baselines, no drift detection, no change tracking. Config managed ad hoc by individual engineers."},
+    ins:{rag:"red",note:"No dashboards. No agreed KPIs. Leadership has no data-driven view of Contact Centre performance."},
+    overall:{rag:"red",note:"Lowest maturity score across the portfolio. Requires dedicated remediation programme with executive sponsorship."} },
+  { name:"Amazon Connect",
+    df:{rag:"amber",note:"Data ownership defined at platform level. Quality monitoring in place via AWS native tooling but not integrated."},
+    di:{rag:"amber",note:"AWS Service Catalogue provides some inventory capability but is not linked to the enterprise data catalogue."},
+    ap:{rag:"green",note:"AWS-native auto provisioning via CloudFormation and Service Catalog. IaC fully adopted. RBAC enforced via IAM."},
+    cm:{rag:"amber",note:"AWS Config rules in place for some resources. Full baseline coverage and drift alerting not yet complete."},
+    ins:{rag:"amber",note:"CloudWatch dashboards in use but not integrated with enterprise reporting. KPIs not formally agreed."},
+    overall:{rag:"amber",note:"AWS-native capabilities give a stronger starting point. Integration with enterprise standards is the key gap."} }
+];
+
+// ══════════════════════════════════════════
+// DOMAIN DEFINITIONS — vision, analysis, architecture per domain
+// ══════════════════════════════════════════
+const productLabels = ["Capture","Controls","Backbone","Workspace","Telephony","Meeting &<br>Mobile","Contact<br>Centre","Amazon<br>Connect"];
+
+const domainConfigs = [
+  {
+    id:"df", label:"Data Foundation", color:"#1B5E8A", rag:"amber",
+    desc:"Governance, ownership, quality standards and data lineage",
+    vision: "To establish a trusted data foundation across all product platforms — where every dataset has a named owner, quality is measured and enforced, lineage is documented end-to-end, and data is classified and governed by design — enabling teams to build with confidence and the firm to meet its regulatory obligations without manual overhead.",
+    pillars: [
+      ["Ownership & Accountability","Every dataset has a named Data Owner accountable for quality and access decisions, published in the catalogue and reviewed annually."],
+      ["Quality by Default","Quality SLAs defined per critical dataset, monitored automatically, and enforced through alerting and remediation workflows."],
+      ["Lineage & Transparency","Every data element traceable from source to consumption. Lineage captured automatically and accessible to all stakeholders."],
+      ["Classification & Privacy","All data classified using the enterprise taxonomy at ingestion. PII identified, protected and governed per regulatory obligations."],
+      ["Compliance by Design","Retention, residency and auditability embedded into the foundation layer — product teams inherit compliance."],
+      ["Continuous Improvement","Foundation maturity baselined per team, measured quarterly, and visible on the portfolio heatmap."]
+    ],
+    archFlow: [
+      ["Classify","Taxonomy at ingestion<br>PII detection"],
+      ["Own","Named Data Owner<br>Published accountability"],
+      ["Measure","Quality SLAs<br>Automated monitoring"],
+      ["Trace","Automated lineage<br>Source to consumption"],
+      ["Govern","Policy enforcement<br>Audit & reporting"]
+    ],
+    archCards: [
+      ["Ownership Registry","Every dataset registered with a named Data Owner, Steward and Custodian. Held in the enterprise catalogue, synced from HR systems, re-attested annually. Unowned data flagged and escalated."],
+      ["Quality Framework","Standard quality dimensions (completeness, accuracy, timeliness, consistency) with SLAs per critical dataset. Automated rules run in-pipeline; breaches alert the Steward and open remediation tickets automatically."],
+      ["Lineage Service","Lineage captured automatically from pipeline metadata — no manual documentation. Business and technical lineage stitched together in the catalogue, queryable by audit, compliance and engineering."],
+      ["Classification Engine","Enterprise taxonomy applied at ingestion with automated PII detection and sensitivity scoring. Classification drives downstream access policy — classify once, enforce everywhere."],
+      ["Policy & Retention","Retention, residency and usage policies defined centrally and enforced automatically. Data past retention flagged for disposal with evidence retained for regulators."],
+      ["Foundation Scorecard","Per-team maturity scorecard covering ownership coverage, SLA adherence, lineage completeness and classification coverage. Published monthly, feeds the portfolio heatmap."]
+    ],
+    themes: [
+      { theme:"Ownership", rows: [
+        { comp:"Named data owners", desc:"Each dataset has a named, accountable Data Owner published in the catalogue.",
+          cells:[{rag:"amber",note:"Primary datasets owned. Secondary unassigned."},{rag:"green",note:"Full ownership model published."},{rag:"red",note:"No owners defined."},{rag:"amber",note:"Owners nominated, not documented."},{rag:"red",note:"No ownership model."},{rag:"amber",note:"Partial ownership defined."},{rag:"red",note:"No owners."},{rag:"amber",note:"Platform-level ownership only."}] },
+        { comp:"Steward assignment", desc:"Operational Data Stewards assigned for day-to-day quality and documentation.",
+          cells:[{rag:"amber",note:"One steward covering all datasets."},{rag:"green",note:"Stewards per domain, trained."},{rag:"red",note:"No stewards."},{rag:"amber",note:"Informal steward role."},{rag:"red",note:"No stewards assigned."},{rag:"amber",note:"Steward for cloud data only."},{rag:"red",note:"No stewards."},{rag:"amber",note:"AWS admin acts as de facto steward."}] },
+        { comp:"Annual attestation", desc:"Ownership reviewed and re-attested annually with escalation for unowned data.",
+          cells:[{rag:"red",note:"No attestation process."},{rag:"green",note:"Annual cycle in place."},{rag:"red",note:"No process."},{rag:"red",note:"No attestation."},{rag:"red",note:"No process."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"No process."},{rag:"amber",note:"IAM review annual, data attestation absent."}] }
+      ]},
+      { theme:"Quality", rows: [
+        { comp:"Quality SLAs", desc:"Documented SLAs per critical dataset covering completeness, accuracy, timeliness.",
+          cells:[{rag:"red",note:"No SLAs defined."},{rag:"green",note:"SLAs defined and measured."},{rag:"red",note:"No SLAs."},{rag:"amber",note:"SLAs in draft."},{rag:"red",note:"No SLAs."},{rag:"amber",note:"SLAs for key feeds only."},{rag:"red",note:"No SLAs."},{rag:"amber",note:"CloudWatch metrics, no formal SLA."}] },
+        { comp:"Automated monitoring", desc:"Quality rules run automatically in-pipeline with alerting on breach.",
+          cells:[{rag:"red",note:"Manual checks only."},{rag:"green",note:"Automated with PagerDuty alerts."},{rag:"red",note:"No monitoring."},{rag:"amber",note:"Partial automation via dbt tests."},{rag:"red",note:"No monitoring."},{rag:"amber",note:"Cloud pipelines only."},{rag:"red",note:"No monitoring."},{rag:"amber",note:"AWS-native checks, not integrated."}] },
+        { comp:"Issue remediation", desc:"Quality breaches open remediation workflows with owners and SLAs.",
+          cells:[{rag:"red",note:"Reactive Jira tickets."},{rag:"amber",note:"Workflow exists, SLA inconsistent."},{rag:"red",note:"Ad hoc fixes."},{rag:"amber",note:"Ticketed but no SLA."},{rag:"red",note:"No process."},{rag:"amber",note:"Informal process."},{rag:"red",note:"No process."},{rag:"amber",note:"Auto-ticket via EventBridge."}] }
+      ]},
+      { theme:"Lineage", rows: [
+        { comp:"Technical lineage", desc:"Pipeline-level lineage captured automatically from orchestration metadata.",
+          cells:[{rag:"amber",note:"Databricks lineage only."},{rag:"green",note:"Full technical lineage."},{rag:"red",note:"No lineage capture."},{rag:"amber",note:"Partial via dbt docs."},{rag:"red",note:"No lineage."},{rag:"amber",note:"Cloud pipelines covered."},{rag:"red",note:"No lineage."},{rag:"amber",note:"Glue lineage partial."}] },
+        { comp:"Business lineage", desc:"Source-to-report lineage documented in business terms, accessible to audit.",
+          cells:[{rag:"red",note:"Not documented."},{rag:"amber",note:"Key reports mapped."},{rag:"red",note:"Not documented."},{rag:"red",note:"Not documented."},{rag:"red",note:"Not documented."},{rag:"red",note:"Not documented."},{rag:"red",note:"Not documented."},{rag:"red",note:"Not documented."}] },
+        { comp:"Impact analysis", desc:"Change impact discoverable via lineage before schema or pipeline changes.",
+          cells:[{rag:"red",note:"Manual investigation."},{rag:"amber",note:"Possible via catalogue queries."},{rag:"red",note:"Not possible."},{rag:"amber",note:"dbt graph used informally."},{rag:"red",note:"Not possible."},{rag:"red",note:"Not possible."},{rag:"red",note:"Not possible."},{rag:"amber",note:"Glue dependency graph partial."}] }
+      ]},
+      { theme:"Classification", rows: [
+        { comp:"Taxonomy adoption", desc:"Enterprise classification taxonomy applied to all datasets at ingestion.",
+          cells:[{rag:"amber",note:"Applied to new datasets only."},{rag:"green",note:"Full taxonomy adoption."},{rag:"red",note:"No classification."},{rag:"amber",note:"Inconsistent application."},{rag:"red",note:"No classification."},{rag:"amber",note:"Cloud data classified."},{rag:"red",note:"No classification."},{rag:"amber",note:"AWS tags used, not enterprise taxonomy."}] },
+        { comp:"PII detection", desc:"Automated PII identification with sensitivity scoring and protection controls.",
+          cells:[{rag:"red",note:"Manual identification."},{rag:"amber",note:"Semi-automated scans."},{rag:"red",note:"No detection."},{rag:"amber",note:"Periodic scans only."},{rag:"red",note:"No detection."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"No detection."},{rag:"amber",note:"Macie enabled, partial coverage."}] },
+        { comp:"Enforcement at ingestion", desc:"Classification enforced as a gate — unclassified data cannot enter the platform.",
+          cells:[{rag:"red",note:"No gate."},{rag:"amber",note:"Gate for new pipelines."},{rag:"red",note:"No gate."},{rag:"red",note:"No gate."},{rag:"red",note:"No gate."},{rag:"red",note:"No gate."},{rag:"red",note:"No gate."},{rag:"red",note:"No enforcement gate."}] }
+      ]},
+      { theme:"Retention & Policy", rows: [
+        { comp:"Retention policies", desc:"Retention periods defined per data classification and enforced automatically.",
+          cells:[{rag:"red",note:"Policies undefined."},{rag:"amber",note:"Defined, manually enforced."},{rag:"red",note:"No policies."},{rag:"amber",note:"Draft policies."},{rag:"red",note:"No policies."},{rag:"amber",note:"Cloud lifecycle rules partial."},{rag:"red",note:"No policies."},{rag:"amber",note:"S3 lifecycle set, not policy-linked."}] },
+        { comp:"Residency compliance", desc:"Data residency requirements mapped and technically enforced per jurisdiction.",
+          cells:[{rag:"amber",note:"Mapped, not enforced."},{rag:"green",note:"Mapped and enforced."},{rag:"red",note:"Not mapped."},{rag:"amber",note:"Mapped for EU data."},{rag:"red",note:"Not mapped."},{rag:"amber",note:"Partially mapped."},{rag:"red",note:"Not mapped."},{rag:"amber",note:"Region-locked, not policy-driven."}] },
+        { comp:"Disposal evidence", desc:"Proof of deletion retained and producible for regulators on request.",
+          cells:[{rag:"red",note:"No evidence retained."},{rag:"amber",note:"Logs exist, not certified."},{rag:"red",note:"No evidence."},{rag:"red",note:"No evidence."},{rag:"red",note:"No evidence."},{rag:"red",note:"No evidence."},{rag:"red",note:"No evidence."},{rag:"amber",note:"CloudTrail logs, no certification."}] }
+      ]},
+      { theme:"Enablement", rows: [
+        { comp:"Team training", desc:"Product teams trained on foundation standards, tools and responsibilities.",
+          cells:[{rag:"amber",note:"Onboarding covers basics."},{rag:"green",note:"Annual certified training."},{rag:"red",note:"No training."},{rag:"amber",note:"Optional training available."},{rag:"red",note:"No training."},{rag:"amber",note:"New joiners only."},{rag:"red",note:"No training."},{rag:"amber",note:"AWS training, uptake ~60%."}] },
+        { comp:"Self-service tooling", desc:"Teams can register, classify and document datasets without central bottleneck.",
+          cells:[{rag:"amber",note:"Partial — catalogue UI only."},{rag:"green",note:"Full self-service workflow."},{rag:"red",note:"No self-service."},{rag:"amber",note:"Catalogue self-service."},{rag:"red",note:"No tooling."},{rag:"amber",note:"Cloud portal partial."},{rag:"red",note:"No tooling."},{rag:"amber",note:"Service Catalog, not integrated."}] },
+        { comp:"Maturity review", desc:"Foundation maturity reviewed quarterly with metrics and owned actions.",
+          cells:[{rag:"red",note:"No review process."},{rag:"green",note:"Quarterly review, metrics published."},{rag:"red",note:"No review."},{rag:"amber",note:"Annual review only."},{rag:"red",note:"No review."},{rag:"amber",note:"Informal review in Jira."},{rag:"red",note:"No review."},{rag:"amber",note:"Well-Architected reviews quarterly."}] }
+      ]}
+    ]
+  },
+  {
+    id:"di", label:"Data Inventory", color:"#0D6B5A", rag:"amber",
+    desc:"Cataloguing, metadata management and discoverability",
+    vision: "To make every dataset in the department findable, understood and requestable — a complete, current and trusted inventory where metadata is synced automatically, ownership is visible, and any consumer can discover and request access to the data they need through self-service.",
+    pillars: [
+      ["Complete Coverage","100% of datasets catalogued — automated discovery ensures nothing operates outside the inventory."],
+      ["Automated Metadata","Metadata synced from source systems automatically. Manual documentation is the exception, not the rule."],
+      ["Ownership Visibility","Every catalogue entry shows its owner, steward and classification at a glance."],
+      ["Business Context","Data dictionary integrated — technical assets linked to business terms and definitions."],
+      ["Self-Service Discovery","Search, filter and browse for all consumers — no tribal knowledge required."],
+      ["Access Workflow","Discovery leads directly to an automated, policy-checked access request — one flow, no emails."]
+    ],
+    archFlow: [
+      ["Discover","Automated scanning<br>New assets registered"],
+      ["Enrich","Metadata sync<br>Business glossary links"],
+      ["Publish","Catalogue entry live<br>Ownership visible"],
+      ["Search","Self-service discovery<br>Filters & classification"],
+      ["Request","Automated access flow<br>Policy-checked approval"]
+    ],
+    archCards: [
+      ["Automated Discovery","Platform scanners detect new datasets automatically and create draft catalogue entries — no dataset operates outside the inventory. Owners notified to complete registration within SLA."],
+      ["Metadata Sync","Technical metadata (schemas, volumes, freshness) synced from source systems continuously. Manual entry limited to business context and descriptions."],
+      ["Business Glossary","Enterprise glossary of business terms linked to technical assets. Definitions versioned and approved by Data Owners — one shared language across teams."],
+      ["Search & Discovery","Full-text search with classification, domain and ownership filters. Preview capability shows structure and sample metadata before access is requested."],
+      ["Access Request Workflow","Request access directly from the catalogue entry. Policy engine checks classification and role; auto-approves standard requests, routes exceptions to the Data Owner."],
+      ["Inventory Health Metrics","Coverage, completeness and staleness metrics per team. Published monthly — catalogue coverage feeds the portfolio heatmap."]
+    ],
+    themes: [
+      { theme:"Coverage", rows: [
+        { comp:"Catalogue coverage", desc:"Percentage of datasets registered in the enterprise catalogue.",
+          cells:[{rag:"amber",note:"~70% of core datasets."},{rag:"green",note:"100% of critical datasets."},{rag:"amber",note:"~60% coverage."},{rag:"green",note:"Strong coverage maintained."},{rag:"amber",note:"~40% coverage."},{rag:"amber",note:"~65% coverage."},{rag:"red",note:"No catalogue."},{rag:"amber",note:"AWS-side only, not enterprise."}] },
+        { comp:"Automated discovery", desc:"New datasets detected and registered automatically by platform scanning.",
+          cells:[{rag:"red",note:"Manual registration only."},{rag:"amber",note:"Scanner for cloud assets."},{rag:"red",note:"Manual only."},{rag:"amber",note:"Partial via dbt integration."},{rag:"red",note:"Manual only."},{rag:"red",note:"Manual only."},{rag:"red",note:"No process."},{rag:"amber",note:"Glue crawler auto-registers."}] },
+        { comp:"Shadow data detection", desc:"Datasets operating outside the catalogue are identified and escalated.",
+          cells:[{rag:"red",note:"No detection."},{rag:"amber",note:"Quarterly audits."},{rag:"red",note:"No detection."},{rag:"red",note:"No detection."},{rag:"red",note:"No detection."},{rag:"red",note:"No detection."},{rag:"red",note:"No detection."},{rag:"amber",note:"AWS Config detects unmanaged S3."}] }
+      ]},
+      { theme:"Metadata", rows: [
+        { comp:"Metadata sync", desc:"Technical metadata synced automatically from source systems.",
+          cells:[{rag:"amber",note:"Manual updates lag reality."},{rag:"green",note:"Continuous sync in place."},{rag:"red",note:"Static, outdated entries."},{rag:"amber",note:"Weekly sync jobs."},{rag:"red",note:"Manual only."},{rag:"amber",note:"Cloud assets synced."},{rag:"red",note:"No metadata."},{rag:"amber",note:"Glue catalog syncs, not enterprise."}] },
+        { comp:"Description quality", desc:"Entries include meaningful business descriptions, not just technical names.",
+          cells:[{rag:"amber",note:"Inconsistent quality."},{rag:"green",note:"Standards enforced at entry."},{rag:"red",note:"Mostly blank."},{rag:"amber",note:"Good for key datasets."},{rag:"red",note:"Minimal descriptions."},{rag:"amber",note:"Variable quality."},{rag:"red",note:"N/A — no catalogue."},{rag:"amber",note:"Tag-based, limited context."}] },
+        { comp:"Freshness indicators", desc:"Catalogue shows data freshness, update frequency and last-updated timestamps.",
+          cells:[{rag:"red",note:"Not shown."},{rag:"amber",note:"Shown for synced assets."},{rag:"red",note:"Not shown."},{rag:"amber",note:"Partial via dbt metadata."},{rag:"red",note:"Not shown."},{rag:"red",note:"Not shown."},{rag:"red",note:"N/A."},{rag:"amber",note:"CloudWatch metrics available."}] }
+      ]},
+      { theme:"Dictionary", rows: [
+        { comp:"Business glossary", desc:"Enterprise glossary of business terms maintained and linked to assets.",
+          cells:[{rag:"amber",note:"Confluence-based, unlinked."},{rag:"green",note:"Integrated into catalogue."},{rag:"amber",note:"Outdated dictionary exists."},{rag:"amber",note:"Partial glossary."},{rag:"red",note:"No dictionary."},{rag:"amber",note:"Draft glossary started."},{rag:"red",note:"No dictionary."},{rag:"red",note:"No business glossary."}] },
+        { comp:"Term ownership", desc:"Glossary terms have owners; definitions versioned and approved.",
+          cells:[{rag:"red",note:"No term owners."},{rag:"green",note:"Owners per term, versioned."},{rag:"red",note:"No ownership."},{rag:"red",note:"No ownership."},{rag:"red",note:"N/A."},{rag:"red",note:"No ownership."},{rag:"red",note:"N/A."},{rag:"red",note:"N/A."}] },
+        { comp:"Asset-term linkage", desc:"Technical assets linked to the business terms they implement.",
+          cells:[{rag:"red",note:"Not linked."},{rag:"amber",note:"Key assets linked."},{rag:"red",note:"Not linked."},{rag:"red",note:"Not linked."},{rag:"red",note:"N/A."},{rag:"red",note:"Not linked."},{rag:"red",note:"N/A."},{rag:"red",note:"Not linked."}] }
+      ]},
+      { theme:"Discovery", rows: [
+        { comp:"Search capability", desc:"Full-text search across catalogue with classification and domain filters.",
+          cells:[{rag:"amber",note:"Basic search available."},{rag:"green",note:"Full search with filters."},{rag:"red",note:"No search — tribal knowledge."},{rag:"green",note:"Self-service search adopted."},{rag:"red",note:"No search."},{rag:"amber",note:"Search for cloud assets."},{rag:"red",note:"No capability."},{rag:"amber",note:"AWS console search only."}] },
+        { comp:"Preview capability", desc:"Consumers can preview structure and sample metadata before requesting access.",
+          cells:[{rag:"red",note:"No preview."},{rag:"amber",note:"Schema preview available."},{rag:"red",note:"No preview."},{rag:"amber",note:"Partial preview."},{rag:"red",note:"No preview."},{rag:"red",note:"No preview."},{rag:"red",note:"N/A."},{rag:"amber",note:"Glue schema visible."}] },
+        { comp:"Usage signals", desc:"Catalogue shows which datasets are widely used, trusted and endorsed.",
+          cells:[{rag:"red",note:"No signals."},{rag:"amber",note:"Endorsement badges in use."},{rag:"red",note:"No signals."},{rag:"red",note:"No signals."},{rag:"red",note:"No signals."},{rag:"red",note:"No signals."},{rag:"red",note:"N/A."},{rag:"red",note:"No signals."}] }
+      ]},
+      { theme:"Access", rows: [
+        { comp:"Self-service requests", desc:"Access requested directly from the catalogue entry, not via email.",
+          cells:[{rag:"red",note:"Email requests only."},{rag:"amber",note:"Workflow live for key datasets."},{rag:"red",note:"Email only."},{rag:"amber",note:"Partial workflow."},{rag:"red",note:"Email only."},{rag:"red",note:"Email only."},{rag:"red",note:"No process."},{rag:"amber",note:"IAM request flow, not catalogue-linked."}] },
+        { comp:"Policy-checked approval", desc:"Requests auto-checked against classification and role policy before approval.",
+          cells:[{rag:"red",note:"Manual review only."},{rag:"amber",note:"Auto-approval for standard tiers."},{rag:"red",note:"No policy check."},{rag:"red",note:"Manual review."},{rag:"red",note:"No policy check."},{rag:"red",note:"Manual review."},{rag:"red",note:"No process."},{rag:"amber",note:"IAM policies enforce, not data-aware."}] },
+        { comp:"Request SLA", desc:"Access requests fulfilled within a defined SLA with status visibility.",
+          cells:[{rag:"red",note:"No SLA. Days to weeks."},{rag:"amber",note:"48hr SLA, mostly met."},{rag:"red",note:"No SLA."},{rag:"amber",note:"Informal 3-day target."},{rag:"red",note:"No SLA."},{rag:"red",note:"No SLA."},{rag:"red",note:"No SLA."},{rag:"amber",note:"Auto-approval instant, exceptions slow."}] }
+      ]},
+      { theme:"Health", rows: [
+        { comp:"Coverage metrics", desc:"Catalogue coverage measured per team and published monthly.",
+          cells:[{rag:"red",note:"Not measured."},{rag:"green",note:"Monthly coverage report."},{rag:"red",note:"Not measured."},{rag:"amber",note:"Quarterly estimate."},{rag:"red",note:"Not measured."},{rag:"red",note:"Not measured."},{rag:"red",note:"Not measured."},{rag:"amber",note:"AWS-side metrics only."}] },
+        { comp:"Staleness monitoring", desc:"Stale or abandoned entries flagged for review and cleanup.",
+          cells:[{rag:"red",note:"No monitoring."},{rag:"amber",note:"Quarterly stale review."},{rag:"red",note:"No monitoring."},{rag:"red",note:"No monitoring."},{rag:"red",note:"No monitoring."},{rag:"red",note:"No monitoring."},{rag:"red",note:"N/A."},{rag:"red",note:"No monitoring."}] },
+        { comp:"Consumer feedback", desc:"Consumers can flag issues, suggest corrections and rate entry usefulness.",
+          cells:[{rag:"red",note:"No feedback channel."},{rag:"amber",note:"Comments enabled."},{rag:"red",note:"No channel."},{rag:"red",note:"No channel."},{rag:"red",note:"No channel."},{rag:"red",note:"No channel."},{rag:"red",note:"N/A."},{rag:"red",note:"No channel."}] }
+      ]}
+    ]
+  },
+  {
+    id:"ap", label:"Auto Provisioning", color:"#7A4A00", rag:"red",
+    desc:"Automated infrastructure, access and environment provisioning",
+    vision: "To replace manual, multi-day provisioning with a self-service, policy-governed platform — where any team can provision environments and access in hours not days, every action is auditable, and deprovisioning happens automatically when roles change — eliminating both the delivery bottleneck and the standing-access risk.",
+    pillars: [
+      ["Self-Service First","Standard provisioning requests fulfilled through a portal without engineering intervention."],
+      ["Policy-Governed","Every request checked against policy automatically — guardrails, not gatekeepers."],
+      ["Hours, Not Days","Average provisioning time under 2 hours for standard requests, down from 3–5 days."],
+      ["Fully Auditable","Every provisioning action logged with who, what, when and why — retained for the regulatory period."],
+      ["Automatic Deprovisioning","Access revoked within 24 hours of role change or departure, triggered by HR events."],
+      ["RBAC Everywhere","Role-based access enforced across all systems — access matches role, always."]
+    ],
+    archFlow: [
+      ["Request","Self-service portal<br>Standard templates"],
+      ["Validate","Policy engine check<br>Auto-approve or route"],
+      ["Provision","IaC execution<br>Under 2 hours"],
+      ["Audit","Full action log<br>Regulatory retention"],
+      ["Deprovision","HR-event triggered<br>24hr revocation"]
+    ],
+    archCards: [
+      ["Self-Service Portal","Single portal for all provisioning requests — environments, access, resources. Standard templates cover 80%+ of requests; custom requests route to engineering with full context."],
+      ["Policy Engine","Every request validated against policy-as-code: role entitlements, classification rules, cost guardrails. Standard requests auto-approve; exceptions route to the accountable owner."],
+      ["IaC Execution Layer","All provisioning executed through version-controlled infrastructure-as-code. No manual console changes — the pipeline is the only path to production."],
+      ["RBAC Framework","Enterprise role model mapped to system entitlements. Access provisioned on role assignment, certified quarterly, and removed automatically on role change."],
+      ["Audit Service","Immutable log of every provisioning action — requester, approver, resources, timestamps. Queryable by compliance and internal audit, retained for the regulatory period."],
+      ["Deprovisioning Automation","HR system events (leaver, mover) trigger automatic access revocation within 24 hours. Orphaned access detected by continuous reconciliation and escalated."]
+    ],
+    themes: [
+      { theme:"Request & Fulfilment", rows: [
+        { comp:"Self-service capability", desc:"Standard provisioning requests fulfilled via portal without engineering.",
+          cells:[{rag:"red",note:"Fully manual via engineers."},{rag:"amber",note:"Portal for some request types."},{rag:"red",note:"Manual only."},{rag:"amber",note:"Partial automation."},{rag:"red",note:"Manual only."},{rag:"pending",note:"Assessment scheduled."},{rag:"red",note:"Manual, no oversight."},{rag:"green",note:"Service Catalog self-service."}] },
+        { comp:"Provisioning time", desc:"Average time from request to fulfilled environment or access.",
+          cells:[{rag:"red",note:"4+ days average."},{rag:"amber",note:"1–2 days typical."},{rag:"red",note:"3–5 days."},{rag:"amber",note:"~1 day for standard."},{rag:"red",note:"5+ days."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"Unpredictable."},{rag:"green",note:"Under 1 hour via IaC."}] },
+        { comp:"Template coverage", desc:"Percentage of requests covered by standard, pre-approved templates.",
+          cells:[{rag:"red",note:"No templates."},{rag:"amber",note:"~50% templated."},{rag:"red",note:"No templates."},{rag:"amber",note:"Core patterns templated."},{rag:"red",note:"No templates."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"No templates."},{rag:"green",note:"80%+ via Service Catalog."}] }
+      ]},
+      { theme:"Access Control", rows: [
+        { comp:"RBAC enforcement", desc:"Role-based access enforced across all systems, access matches role.",
+          cells:[{rag:"red",note:"No RBAC."},{rag:"amber",note:"RBAC on core systems."},{rag:"red",note:"No RBAC."},{rag:"amber",note:"Partial RBAC."},{rag:"red",note:"No RBAC."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"No RBAC."},{rag:"green",note:"IAM roles enforced."}] },
+        { comp:"Least privilege", desc:"Access granted is scoped to minimum required for the role.",
+          cells:[{rag:"red",note:"Broad access common."},{rag:"amber",note:"Reviewed on request."},{rag:"red",note:"Over-provisioned."},{rag:"amber",note:"Partially scoped."},{rag:"red",note:"Broad by default."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"Unscoped access."},{rag:"amber",note:"IAM policies scoped, drift exists."}] },
+        { comp:"Quarterly certification", desc:"Access reviewed and certified quarterly by accountable owners.",
+          cells:[{rag:"red",note:"Annual manager attestation only."},{rag:"amber",note:"Semi-annual review."},{rag:"red",note:"No certification."},{rag:"red",note:"Annual only."},{rag:"red",note:"No process."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"No certification."},{rag:"amber",note:"IAM Access Analyzer quarterly."}] }
+      ]},
+      { theme:"Automation", rows: [
+        { comp:"IaC adoption", desc:"All provisioning executed through version-controlled infrastructure-as-code.",
+          cells:[{rag:"red",note:"Console changes common."},{rag:"amber",note:"IaC for new builds."},{rag:"red",note:"Manual Terraform by seniors."},{rag:"amber",note:"Terraform standard, gaps exist."},{rag:"red",note:"No IaC."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"No IaC."},{rag:"green",note:"CloudFormation/CDK full adoption."}] },
+        { comp:"Policy as code", desc:"Provisioning policies encoded and checked automatically pre-execution.",
+          cells:[{rag:"red",note:"No policy checks."},{rag:"amber",note:"Cost guardrails only."},{rag:"red",note:"No checks."},{rag:"red",note:"Manual review."},{rag:"red",note:"No checks."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"No checks."},{rag:"amber",note:"SCPs enforce, coverage partial."}] },
+        { comp:"Approval workflow", desc:"Exceptions route automatically to accountable owner with full context.",
+          cells:[{rag:"red",note:"Email chains."},{rag:"amber",note:"Jira routing works."},{rag:"red",note:"Ad hoc."},{rag:"amber",note:"ServiceNow partial."},{rag:"red",note:"Email only."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"No workflow."},{rag:"amber",note:"AWS Change Manager partial."}] }
+      ]},
+      { theme:"Audit & Logging", rows: [
+        { comp:"Action logging", desc:"Every provisioning action logged: requester, approver, resource, timestamp.",
+          cells:[{rag:"red",note:"No centralised log."},{rag:"amber",note:"Logs exist, fragmented."},{rag:"red",note:"Ad hoc notes only."},{rag:"amber",note:"Pipeline logs retained."},{rag:"red",note:"No logging."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"No logging."},{rag:"green",note:"CloudTrail complete."}] },
+        { comp:"Regulatory retention", desc:"Logs retained for the full regulatory period, tamper-evident.",
+          cells:[{rag:"red",note:"No retention policy."},{rag:"amber",note:"Retained, not certified."},{rag:"red",note:"Not retained."},{rag:"amber",note:"Git history as record."},{rag:"red",note:"Not retained."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"Not retained."},{rag:"green",note:"S3 immutable retention set."}] },
+        { comp:"Audit accessibility", desc:"Compliance and internal audit can self-serve provisioning history.",
+          cells:[{rag:"red",note:"Requires engineering help."},{rag:"amber",note:"Read access granted."},{rag:"red",note:"Not accessible."},{rag:"red",note:"Engineering-mediated."},{rag:"red",note:"Not accessible."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"Not accessible."},{rag:"amber",note:"Athena queries possible."}] }
+      ]},
+      { theme:"Deprovisioning", rows: [
+        { comp:"HR-event triggers", desc:"Leaver and mover events automatically trigger access revocation.",
+          cells:[{rag:"red",note:"Manual, often missed."},{rag:"amber",note:"Leaver feed connected."},{rag:"red",note:"No integration."},{rag:"red",note:"Manual process."},{rag:"red",note:"Manager self-report only."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"Access persists indefinitely."},{rag:"amber",note:"SSO deprovision, resource cleanup manual."}] },
+        { comp:"Revocation SLA", desc:"Access revoked within 24 hours of role change or departure.",
+          cells:[{rag:"red",note:"Weeks or never."},{rag:"amber",note:"~72 hours typical."},{rag:"red",note:"No SLA."},{rag:"red",note:"No SLA."},{rag:"red",note:"No SLA."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"No SLA."},{rag:"amber",note:"SSO same-day, resources lag."}] },
+        { comp:"Orphan detection", desc:"Continuous reconciliation detects orphaned access and escalates.",
+          cells:[{rag:"red",note:"No detection."},{rag:"amber",note:"Quarterly reconciliation."},{rag:"red",note:"No detection."},{rag:"red",note:"No detection."},{rag:"red",note:"No detection."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"No detection."},{rag:"amber",note:"Access Analyzer flags unused."}] }
+      ]},
+      { theme:"Enablement", rows: [
+        { comp:"Team onboarding", desc:"Teams trained on the provisioning platform, templates and escalation paths.",
+          cells:[{rag:"red",note:"No training."},{rag:"amber",note:"Onboarding docs exist."},{rag:"red",note:"No training."},{rag:"amber",note:"Wiki-based guidance."},{rag:"red",note:"No training."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"No training."},{rag:"amber",note:"AWS training available."}] },
+        { comp:"Cost visibility", desc:"Provisioned resources tagged with owner and cost centre automatically.",
+          cells:[{rag:"red",note:"No tagging standard."},{rag:"amber",note:"Tagging policy, partial adherence."},{rag:"red",note:"No tagging."},{rag:"amber",note:"Tags on new resources."},{rag:"red",note:"No tagging."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"No tagging."},{rag:"green",note:"Tag policies enforced."}] },
+        { comp:"Continuous improvement", desc:"Provisioning metrics reviewed quarterly with improvement actions owned.",
+          cells:[{rag:"red",note:"No review."},{rag:"amber",note:"Informal review."},{rag:"red",note:"No review."},{rag:"red",note:"No review."},{rag:"red",note:"No review."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"No review."},{rag:"amber",note:"Well-Architected quarterly."}] }
+      ]}
+    ]
+  },
+  {
+    id:"cm", label:"Config Management", color:"#4A2A7A", rag:"amber",
+    desc:"Configuration baselines, drift detection and change control",
+    vision: "To establish a single, automated and continuously enforced configuration management capability across all product platforms — eliminating drift, reducing operational risk, and enabling every team to operate with confidence that their environments are compliant, consistent and audit-ready at all times.",
+    pillars: [
+      ["Consistency","Every environment operates from a single, version-controlled baseline. Configuration is defined as code, not managed by hand."],
+      ["Automation","Drift detected continuously and remediated automatically for known patterns. Alerts within minutes, not weeks."],
+      ["Auditability","Every configuration change tracked, approved and retained. Audit can interrogate any change at any time."],
+      ["Risk Reduction","Config drift is a leading cause of incidents and vulnerabilities. Eliminating it materially reduces operational risk."],
+      ["Shared Ownership","DCS provides the platform and standards; product teams own their configuration. Clear accountability at every layer."],
+      ["Continuous Improvement","Maturity baselined, drift reduction measured monthly, remediation progressively automated across all platforms."]
+    ],
+    archFlow: [
+      ["Define","Config as code<br>Version control"],
+      ["Deploy","Automated pipeline<br>Policy enforcement"],
+      ["Detect","Continuous monitoring<br>Drift alerting"],
+      ["Remediate","Auto-fix known patterns<br>Escalate complex"],
+      ["Audit","Full change log<br>Compliance reporting"]
+    ],
+    archCards: [
+      ["Configuration Repository","All configuration stored as code in a centralised Git repository. Branching strategy enforces environment promotion. No manual configuration outside the repository workflow."],
+      ["Baseline Management","Approved baselines per environment and platform type — versioned, peer-reviewed and signed off. Any deviation triggers an automatic alert within 15 minutes."],
+      ["Drift Detection Engine","Continuous scanning compares live configuration against baseline. Drift classified by severity and routed to the appropriate owner. Critical drift triggers immediate incident creation."],
+      ["Automated Remediation","Known drift patterns remediated automatically via pre-approved runbooks. Complex drift escalated with full context. All actions logged with before/after state."],
+      ["Change Control Integration","All changes flow through ITSM change management. Emergency changes require two-person authorisation, documented within 24 hours. No undocumented changes."],
+      ["Audit & Compliance Reporting","Full audit trail retained for the regulatory period. Monthly compliance dashboard for leadership and internal audit. Annual external audit built into the operating calendar."]
+    ],
+    themes: [
+      { theme:"Baseline Management", rows: [
+        { comp:"Environment baselines", desc:"Documented config baselines exist for all environments and are version-controlled.",
+          cells:[{rag:"amber",note:"Prod only. Dev/UAT unbaselined."},{rag:"green",note:"All envs baselined in Git."},{rag:"red",note:"No baselines defined anywhere."},{rag:"amber",note:"Prod baselined. Others partial."},{rag:"red",note:"No baseline documentation."},{rag:"amber",note:"Prod & UAT baselined."},{rag:"red",note:"No baselines in place."},{rag:"amber",note:"AWS Config rules partial coverage."}] },
+        { comp:"Version control adoption", desc:"Configuration managed as code in a version-controlled repository with peer review.",
+          cells:[{rag:"amber",note:"Some IaC. Manual overrides present."},{rag:"green",note:"Full IaC. Peer review enforced."},{rag:"red",note:"No IaC. Config managed manually."},{rag:"green",note:"Terraform in use. PRs required."},{rag:"red",note:"No version control for config."},{rag:"amber",note:"IaC for cloud. On-prem manual."},{rag:"red",note:"Config changes made directly in prod."},{rag:"green",note:"CloudFormation / CDK fully adopted."}] },
+        { comp:"Baseline review cadence", desc:"Baselines reviewed and updated on schedule or upon platform version changes.",
+          cells:[{rag:"amber",note:"Ad hoc review. No defined cadence."},{rag:"green",note:"Quarterly review scheduled."},{rag:"red",note:"No review process exists."},{rag:"amber",note:"Reviewed on major releases only."},{rag:"pending",note:"Not assessed."},{rag:"amber",note:"Semi-annual review in place."},{rag:"red",note:"No review process."},{rag:"amber",note:"Linked to AWS release schedule."}] }
+      ]},
+      { theme:"Drift Detection", rows: [
+        { comp:"Automated drift scanning", desc:"Continuous scanning compares live config to baseline and flags deviations.",
+          cells:[{rag:"red",note:"No automated scanning."},{rag:"green",note:"Continuous scanning. Alerts configured."},{rag:"red",note:"Drift found only via incidents."},{rag:"amber",note:"Scanning for cloud resources only."},{rag:"red",note:"No drift detection tooling."},{rag:"amber",note:"Partial — cloud only."},{rag:"red",note:"No tooling. Manual checks only."},{rag:"amber",note:"AWS Config enabled. Rules incomplete."}] },
+        { comp:"Alert routing & SLA", desc:"Drift alerts routed to the correct owner within a defined SLA.",
+          cells:[{rag:"red",note:"No alert routing. Email only."},{rag:"green",note:"PagerDuty routing. 15-min SLA met."},{rag:"red",note:"No alerting configured."},{rag:"amber",note:"Alerts exist but routing inconsistent."},{rag:"red",note:"No alert process defined."},{rag:"amber",note:"Alerts configured but SLA undefined."},{rag:"red",note:"No alerting in place."},{rag:"amber",note:"SNS alerts. SLA not formally set."}] },
+        { comp:"Drift classification", desc:"Drift classified by severity to prioritise remediation effort.",
+          cells:[{rag:"red",note:"No classification."},{rag:"green",note:"3-tier severity model in use."},{rag:"red",note:"No classification process."},{rag:"amber",note:"Binary (breach / no breach) only."},{rag:"red",note:"No classification."},{rag:"amber",note:"Informal severity in Jira."},{rag:"red",note:"No process."},{rag:"amber",note:"AWS Config severity levels used."}] }
+      ]},
+      { theme:"Change Control", rows: [
+        { comp:"Change approval workflow", desc:"All config changes require formal ITSM approval before being applied.",
+          cells:[{rag:"amber",note:"Jira process, inconsistently followed."},{rag:"green",note:"ServiceNow mandatory for all changes."},{rag:"red",note:"No formal approval process."},{rag:"amber",note:"Process exists, emergency bypass common."},{rag:"amber",note:"Manual approval via email."},{rag:"amber",note:"ITSM for planned changes only."},{rag:"red",note:"Changes made without approval."},{rag:"green",note:"AWS Change Manager enforced."}] },
+        { comp:"Emergency change handling", desc:"Emergency changes follow expedited process with post-doc within 24 hours.",
+          cells:[{rag:"red",note:"Emergency bypasses process entirely."},{rag:"green",note:"2-person auth. Documented within 4hrs."},{rag:"red",note:"No emergency change process."},{rag:"amber",note:"Process defined but rarely followed."},{rag:"red",note:"Ad hoc. No documentation requirement."},{rag:"amber",note:"24hr doc SLA often missed."},{rag:"red",note:"Changes made directly in prod."},{rag:"amber",note:"SSM used, post-doc inconsistent."}] },
+        { comp:"Change audit trail", desc:"Complete, tamper-proof log of all changes retained for the regulatory period.",
+          cells:[{rag:"amber",note:"Jira history, not retained long-term."},{rag:"green",note:"Full audit trail. 7yr retention."},{rag:"red",note:"No audit trail. Ad hoc notes."},{rag:"amber",note:"Git history, not ITSM-linked."},{rag:"red",note:"No audit trail in place."},{rag:"amber",note:"Partial trail. Retention undefined."},{rag:"red",note:"No logs retained."},{rag:"green",note:"CloudTrail. Full retention configured."}] }
+      ]},
+      { theme:"Remediation", rows: [
+        { comp:"Automated remediation", desc:"Known drift patterns remediated automatically via pre-approved runbooks.",
+          cells:[{rag:"red",note:"No automated remediation."},{rag:"amber",note:"Runbooks exist, execution manual."},{rag:"red",note:"All remediation manual."},{rag:"amber",note:"Some Ansible automation."},{rag:"red",note:"No remediation process."},{rag:"red",note:"No automation. Manual only."},{rag:"red",note:"No process defined."},{rag:"amber",note:"AWS Config auto-remediation partial."}] },
+        { comp:"Remediation SLA", desc:"Remediation completed within severity-based SLA.",
+          cells:[{rag:"red",note:"No SLA. Best-effort only."},{rag:"amber",note:"SLA defined, not always met."},{rag:"red",note:"No SLA."},{rag:"amber",note:"Informal SLA with team lead."},{rag:"red",note:"No SLA in place."},{rag:"red",note:"No SLA."},{rag:"red",note:"No SLA."},{rag:"amber",note:"SLA in runbook. Tracking manual."}] },
+        { comp:"Post-remediation validation", desc:"Automated validation confirms return to baseline after remediation.",
+          cells:[{rag:"red",note:"No validation. Assumed fixed."},{rag:"amber",note:"Manual validation post-fix."},{rag:"red",note:"No validation process."},{rag:"amber",note:"Pipeline re-run validates."},{rag:"red",note:"No validation."},{rag:"red",note:"No post-fix validation."},{rag:"red",note:"No validation."},{rag:"amber",note:"AWS Config re-evaluates."}] }
+      ]},
+      { theme:"Governance & Compliance", rows: [
+        { comp:"Config ownership model", desc:"Named Config Owner per platform, accountable for baseline and remediation.",
+          cells:[{rag:"amber",note:"Informal. No published accountability."},{rag:"green",note:"Named owner per platform. Published."},{rag:"red",note:"No ownership model."},{rag:"amber",note:"Team-level, not per-platform."},{rag:"red",note:"No config ownership defined."},{rag:"amber",note:"Partial — cloud platforms only."},{rag:"red",note:"No ownership."},{rag:"amber",note:"AWS owner defined. App config unclear."}] },
+        { comp:"Compliance reporting", desc:"Monthly compliance reports published to leadership and internal audit.",
+          cells:[{rag:"red",note:"No compliance reporting."},{rag:"green",note:"Monthly report to leadership."},{rag:"red",note:"No reporting."},{rag:"amber",note:"Quarterly. Not shared with audit."},{rag:"red",note:"No reporting."},{rag:"amber",note:"Ad hoc. No regular cadence."},{rag:"red",note:"No reporting."},{rag:"amber",note:"Security Hub. Not integrated."}] },
+        { comp:"Regulatory alignment", desc:"Config controls aligned to applicable regulatory requirements.",
+          cells:[{rag:"amber",note:"Partial. Gaps in SR 11-7."},{rag:"green",note:"Fully mapped to requirements."},{rag:"red",note:"No regulatory mapping."},{rag:"amber",note:"SOX mapped. DORA gaps remain."},{rag:"red",note:"No regulatory alignment."},{rag:"amber",note:"Partial. Annual review overdue."},{rag:"red",note:"Not assessed."},{rag:"amber",note:"AWS tools used. JPMC mapping partial."}] }
+      ]},
+      { theme:"Tooling & Enablement", rows: [
+        { comp:"Tooling standardisation", desc:"Standard, approved toolset adopted consistently across the team.",
+          cells:[{rag:"amber",note:"Mix of tools. No standard enforced."},{rag:"green",note:"Terraform + Ansible. Standardised."},{rag:"red",note:"Ad hoc scripts used."},{rag:"green",note:"Terraform enforced via pipeline."},{rag:"red",note:"No approved toolset."},{rag:"amber",note:"Cloud standard. On-prem varies."},{rag:"red",note:"No standard toolset."},{rag:"green",note:"AWS-native stack standard."}] },
+        { comp:"Team training & awareness", desc:"All engineers trained on standards, tools and escalation paths.",
+          cells:[{rag:"amber",note:"Onboarding basics only."},{rag:"green",note:"Annual training. All certified."},{rag:"red",note:"No training programme."},{rag:"amber",note:"Training optional."},{rag:"red",note:"No training."},{rag:"amber",note:"New joiners only."},{rag:"red",note:"No training."},{rag:"amber",note:"AWS training, uptake ~60%."}] },
+        { comp:"Continuous improvement", desc:"Config maturity reviewed quarterly with metrics and owned actions.",
+          cells:[{rag:"red",note:"No maturity review process."},{rag:"green",note:"Quarterly review. Metrics published."},{rag:"red",note:"No improvement process."},{rag:"amber",note:"Annual review. No metrics."},{rag:"red",note:"No review."},{rag:"amber",note:"Informal. Actions in Jira."},{rag:"red",note:"No improvement process."},{rag:"amber",note:"Well-Architected quarterly."}] }
+      ]}
+    ]
+  },
+  {
+    id:"ins", label:"Insights & Reporting", color:"#6B4226", rag:"amber",
+    desc:"Dashboards, KPIs, self-service analytics and leadership reporting",
+    vision: "To give every team and every leader a trusted, self-service view of performance — where KPIs are agreed and baselined, dashboards are adopted rather than ignored, insights are interactive rather than emailed, and data products power the department's AI ambitions with quality-guaranteed foundations.",
+    pillars: [
+      ["Self-Service by Default","Every team can answer their own questions through dashboards — no report-request queue."],
+      ["KPIs That Matter","Metrics formally agreed with leadership, baselined from real data, tracked against targets monthly."],
+      ["Interactive Leadership View","Leadership drills into the data directly — exception highlighting, trends, no static email decks."],
+      ["Data Products","Published, versioned, SLA-backed data assets — the trusted building blocks for analytics and AI."],
+      ["Adoption Over Availability","Success measured by usage, not existence. Dashboards that aren't used are treated as failures."],
+      ["AI-Ready Foundations","Model-ready data with documented schemas and quality guarantees — powering the AI strategy."]
+    ],
+    archFlow: [
+      ["Define","KPIs agreed<br>Baselined with leadership"],
+      ["Build","Standard dashboards<br>Certified data sources"],
+      ["Publish","Data products live<br>SLAs & schemas"],
+      ["Adopt","Usage tracked<br>Training & promotion"],
+      ["Evolve","Feedback loops<br>Quarterly KPI review"]
+    ],
+    archCards: [
+      ["KPI Framework","KPIs formally agreed with product leadership, baselined from current data, with targets and owners. Reviewed quarterly — metrics that no longer drive decisions are retired."],
+      ["Dashboard Platform","Standard, certified dashboard suite per product function on approved tooling. Certified sources only — no dashboards built on ungoverned extracts."],
+      ["Leadership Reporting","Interactive leadership dashboard with drill-down, exception highlighting and trend analysis. Monthly automated narrative report generated from the same source."],
+      ["Data Product Registry","Published data products with documented schemas, quality SLAs and versioning. Consumed via self-service API — the contract between producers and consumers."],
+      ["Adoption Analytics","Dashboard usage measured per team and per asset. Low-adoption assets reviewed: improve, promote or retire. Adoption feeds the portfolio heatmap."],
+      ["AI/ML Enablement","Model-ready datasets with feature documentation, quality guarantees and lineage. Training data governance built in — supporting the firm's AI ambitions safely."]
+    ],
+    themes: [
+      { theme:"KPIs & Metrics", rows: [
+        { comp:"KPI agreement", desc:"KPIs formally agreed with leadership, with owners and targets.",
+          cells:[{rag:"green",note:"KPIs agreed and reviewed monthly."},{rag:"amber",note:"KPIs defined, review irregular."},{rag:"red",note:"No agreed KPIs."},{rag:"green",note:"KPIs baselined and tracked."},{rag:"pending",note:"Session not yet held."},{rag:"amber",note:"KPIs not formally agreed."},{rag:"red",note:"No KPIs."},{rag:"amber",note:"Ops metrics only, no business KPIs."}] },
+        { comp:"Baseline & targets", desc:"Metrics baselined from real data with targets set against them.",
+          cells:[{rag:"green",note:"Baselined with targets."},{rag:"amber",note:"Baselined, targets informal."},{rag:"red",note:"No baseline."},{rag:"green",note:"Targets tracked monthly."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"No baseline."},{rag:"red",note:"No baseline."},{rag:"amber",note:"CloudWatch baselines, no targets."}] },
+        { comp:"Quarterly KPI review", desc:"KPIs reviewed quarterly; stale metrics retired, new ones added.",
+          cells:[{rag:"amber",note:"Annual review only."},{rag:"amber",note:"Ad hoc review."},{rag:"red",note:"No review."},{rag:"amber",note:"Semi-annual review."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"No review."},{rag:"red",note:"No review."},{rag:"red",note:"No review process."}] }
+      ]},
+      { theme:"Dashboards", rows: [
+        { comp:"Self-service availability", desc:"Certified dashboards available to the whole team, not just analysts.",
+          cells:[{rag:"green",note:"Widely available and used."},{rag:"amber",note:"Available, not widely adopted."},{rag:"red",note:"No dashboards."},{rag:"green",note:"Strong self-service culture."},{rag:"pending",note:"Not assessed."},{rag:"amber",note:"Dashboards exist, adoption low."},{rag:"red",note:"No dashboards."},{rag:"amber",note:"CloudWatch only, not business-facing."}] },
+        { comp:"Certified sources", desc:"Dashboards built only on certified, governed data sources.",
+          cells:[{rag:"amber",note:"Mix of certified and extracts."},{rag:"green",note:"Certified sources enforced."},{rag:"red",note:"N/A — no dashboards."},{rag:"amber",note:"Mostly certified."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"Built on manual extracts."},{rag:"red",note:"N/A."},{rag:"amber",note:"AWS-native sources only."}] },
+        { comp:"Mobile & accessibility", desc:"Dashboards usable on mobile and meet accessibility standards.",
+          cells:[{rag:"amber",note:"Desktop-optimised only."},{rag:"amber",note:"Partial mobile support."},{rag:"red",note:"N/A."},{rag:"amber",note:"Mobile views for key dashboards."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"Not mobile-friendly."},{rag:"red",note:"N/A."},{rag:"red",note:"Console-only access."}] }
+      ]},
+      { theme:"Leadership Reporting", rows: [
+        { comp:"Interactive access", desc:"Leadership can drill into data directly, not just receive static reports.",
+          cells:[{rag:"green",note:"Leadership dashboard live."},{rag:"amber",note:"Email-based reporting."},{rag:"red",note:"Ad hoc and infrequent."},{rag:"green",note:"Monthly interactive review."},{rag:"pending",note:"Not assessed."},{rag:"amber",note:"Reporting cadence irregular."},{rag:"red",note:"No data-driven view."},{rag:"amber",note:"Ops dashboards, not leadership-facing."}] },
+        { comp:"Exception highlighting", desc:"Reports surface exceptions and trends automatically, not raw tables.",
+          cells:[{rag:"amber",note:"Manual commentary added."},{rag:"amber",note:"Basic thresholds set."},{rag:"red",note:"No reporting."},{rag:"amber",note:"Trend views available."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"Raw data only."},{rag:"red",note:"N/A."},{rag:"amber",note:"CloudWatch alarms as proxy."}] },
+        { comp:"Automated narrative", desc:"Monthly report generated automatically from the same governed source.",
+          cells:[{rag:"red",note:"Manually compiled deck."},{rag:"red",note:"Manual email report."},{rag:"red",note:"No report."},{rag:"amber",note:"Semi-automated build."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"Manual compilation."},{rag:"red",note:"No report."},{rag:"red",note:"No narrative reporting."}] }
+      ]},
+      { theme:"Data Products", rows: [
+        { comp:"Published products", desc:"Data products published with documented schemas and ownership.",
+          cells:[{rag:"red",note:"No formal data products."},{rag:"amber",note:"Two products published."},{rag:"red",note:"No products."},{rag:"amber",note:"One pilot product live."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"No products."},{rag:"red",note:"No products."},{rag:"red",note:"Raw access only."}] },
+        { comp:"Quality SLAs", desc:"Products carry quality SLAs consumers can rely on.",
+          cells:[{rag:"red",note:"No SLAs."},{rag:"amber",note:"SLAs drafted."},{rag:"red",note:"No SLAs."},{rag:"amber",note:"SLA on pilot product."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"No SLAs."},{rag:"red",note:"No SLAs."},{rag:"red",note:"No SLAs."}] },
+        { comp:"Self-service API access", desc:"Products consumable via documented, versioned APIs.",
+          cells:[{rag:"red",note:"Direct table access."},{rag:"amber",note:"API for one product."},{rag:"red",note:"No API."},{rag:"amber",note:"API in build."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"No API."},{rag:"red",note:"No API."},{rag:"amber",note:"AWS APIs, not product-shaped."}] }
+      ]},
+      { theme:"Adoption", rows: [
+        { comp:"Usage measurement", desc:"Dashboard and product usage tracked per team and per asset.",
+          cells:[{rag:"amber",note:"Usage visible in tooling."},{rag:"amber",note:"Basic usage stats."},{rag:"red",note:"N/A."},{rag:"green",note:"Usage reviewed monthly."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"Not measured."},{rag:"red",note:"N/A."},{rag:"amber",note:"CloudWatch usage metrics."}] },
+        { comp:"Low-adoption review", desc:"Unused assets reviewed: improved, promoted or retired.",
+          cells:[{rag:"red",note:"No review."},{rag:"red",note:"No review."},{rag:"red",note:"N/A."},{rag:"amber",note:"Annual cleanup."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"No review."},{rag:"red",note:"N/A."},{rag:"red",note:"No review."}] },
+        { comp:"Training & promotion", desc:"Teams trained on available dashboards; new assets actively promoted.",
+          cells:[{rag:"amber",note:"Onboarding mentions dashboards."},{rag:"amber",note:"Occasional demos."},{rag:"red",note:"No training."},{rag:"green",note:"Regular showcase sessions."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"No promotion."},{rag:"red",note:"No training."},{rag:"red",note:"No training."}] }
+      ]},
+      { theme:"AI Enablement", rows: [
+        { comp:"Model-ready datasets", desc:"Datasets prepared for AI/ML with feature documentation and quality guarantees.",
+          cells:[{rag:"red",note:"Raw access, no guarantees."},{rag:"amber",note:"Two curated datasets."},{rag:"red",note:"Nothing prepared."},{rag:"amber",note:"Pilot feature set in build."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"Nothing prepared."},{rag:"red",note:"Nothing prepared."},{rag:"amber",note:"SageMaker feature store trialled."}] },
+        { comp:"Training data governance", desc:"AI training data usage governed — consent, classification, lineage tracked.",
+          cells:[{rag:"red",note:"No governance."},{rag:"amber",note:"Policy drafted."},{rag:"red",note:"No governance."},{rag:"red",note:"No governance."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"No governance."},{rag:"red",note:"No governance."},{rag:"red",note:"No governance."}] },
+        { comp:"Feature documentation", desc:"Features documented with definitions, owners and refresh cadence.",
+          cells:[{rag:"red",note:"Not documented."},{rag:"amber",note:"Partial documentation."},{rag:"red",note:"Not documented."},{rag:"amber",note:"Pilot docs in progress."},{rag:"pending",note:"Not assessed."},{rag:"red",note:"Not documented."},{rag:"red",note:"Not documented."},{rag:"amber",note:"Feature store metadata partial."}] }
+      ]}
+    ]
+  }
+];
+
+// ══════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════
+function ragChip(status) {
+  const map = { green:"rag-green", amber:"rag-amber", red:"rag-red", pending:"rag-pending" };
+  const lbl = { green:"Green", amber:"Amber", red:"Red", pending:"Pending" };
+  return `<span class="rag ${map[status]||'rag-pending'}">${lbl[status]||'—'}</span>`;
+}
+function ragDot(status) {
+  const map = { green:"rag-dot-green", amber:"rag-dot-amber", red:"rag-dot-red", pending:"rag-dot-pending" };
+  return `<span class="rag-dot ${map[status]||'rag-dot-pending'}"></span>`;
+}
+
+// ══════════════════════════════════════════
+// BUILD HEATMAP
+// ══════════════════════════════════════════
+const tbody = document.getElementById('heatmap-body');
+teams.forEach(t => {
+  const cells = ['df','di','ap','cm','ins','overall'].map(key => {
+    const cell = t[key];
+    return `<td><div class="rag-cell-inner">${ragChip(cell.rag)}<div class="rag-note">${cell.note}</div></div></td>`;
+  }).join('');
+  tbody.innerHTML += `<tr><td class="team-name">${t.name}</td>${cells}</tr>`;
+});
+document.getElementById('heatmap-foot').innerHTML = `<tr>
+  <td class="team-name" style="padding:10px;">Domain summary</td>
+  <td><div class="rag-cell-inner">${ragChip('amber')}</div></td>
+  <td><div class="rag-cell-inner">${ragChip('amber')}</div></td>
+  <td><div class="rag-cell-inner">${ragChip('red')}</div></td>
+  <td><div class="rag-cell-inner">${ragChip('amber')}</div></td>
+  <td><div class="rag-cell-inner">${ragChip('amber')}</div></td>
+  <td></td>
+</tr>`;
+
+// ══════════════════════════════════════════
+// BUILD DOMAIN PANELS — each with 3 sub-tabs
+// ══════════════════════════════════════════
+domainConfigs.forEach(d => {
+  const panel = document.getElementById(d.id);
+
+  // Sub-nav
+  const pillarsHtml = d.pillars.map(p => `
+    <div class="vision-pillar" style="border-top-color:${d.color};">
+      <div class="vision-pillar-title" style="color:${d.color};">${p[0]}</div>
+      <div class="vision-pillar-body">${p[1]}</div>
+    </div>`).join('');
+
+  const flowHtml = d.archFlow.map((st,i) => {
+    const shades = [d.color, shade(d.color,18), shade(d.color,-18), shade(d.color,30), shade(d.color,-32)];
+    return `<div class="arch-step" style="background:${shades[i%5]};">${st[0]}<div class="arch-step-sub">${st[1]}</div></div>`;
+  }).join('');
+
+  const cardsHtml = d.archCards.map(c => `
+    <div class="arch-card" style="border-top-color:${d.color};">
+      <div class="arch-card-title" style="color:${d.color};">${c[0]}</div>
+      <div class="arch-card-body">${c[1]}</div>
+    </div>`).join('');
+
+  // Analysis table
+  let tbl = `<thead><tr>
+    <th class="theme-hdr">Theme</th>
+    <th class="comp-hdr">Component</th>
+    <th class="desc-hdr">Description</th>
+    ${productLabels.map(l => `<th class="product-hdr" style="background:${d.color};">${l}</th>`).join('')}
+  </tr></thead><tbody>`;
+  d.themes.forEach(theme => {
+    theme.rows.forEach((row, ri) => {
+      const themeCell = ri === 0
+        ? `<td class="theme-cell" rowspan="${theme.rows.length}" style="background:${d.color};">${theme.theme}</td>` : '';
+      const productCells = row.cells.map(cell =>
+        `<td class="product-cell"><div class="pcell">${ragDot(cell.rag)}<span class="pcell-text">${cell.note}</span></div></td>`).join('');
+      tbl += `<tr>${themeCell}<td class="comp-cell">${row.comp}</td><td class="desc-cell">${row.desc}</td>${productCells}</tr>`;
+    });
+  });
+  tbl += '</tbody>';
+
+  panel.innerHTML = `
+    <div class="sub-nav">
+      <button class="sub-btn active" onclick="showSub('${d.id}-vision',this,'${d.id}')">Vision</button>
+      <button class="sub-btn" onclick="showSub('${d.id}-analysis',this,'${d.id}')">Discovery Analysis</button>
+      <button class="sub-btn" onclick="showSub('${d.id}-arch',this,'${d.id}')">Target State Architecture</button>
+    </div>
+
+    <div id="${d.id}-vision" class="sub-panel active">
+      <div class="card">
+        <div class="card-title">${d.label} — Vision Statement</div>
+        <div class="vision-statement" style="background:${d.color};">
+          <div class="vision-label">Vision</div>
+          "${d.vision}"
+        </div>
+        <div class="vision-pillars">${pillarsHtml}</div>
+      </div>
+    </div>
+
+    <div id="${d.id}-analysis" class="sub-panel">
+      <div class="card">
+        <div class="domain-hdr">
+          <span class="domain-dot" style="background:${d.color};"></span>
+          <div>
+            <div class="domain-name">${d.label} — Discovery Analysis &nbsp;${ragChip(d.rag)}</div>
+            <div class="domain-desc">${d.desc} · Current state per theme, component and product function</div>
+          </div>
+        </div>
+        <div class="legend" style="margin-bottom:14px;">
+          <div class="legend-item"><span class="rag-dot rag-dot-green" style="width:12px;height:12px;"></span>Green — meets standard</div>
+          <div class="legend-item"><span class="rag-dot rag-dot-amber" style="width:12px;height:12px;"></span>Amber — partial / in progress</div>
+          <div class="legend-item"><span class="rag-dot rag-dot-red" style="width:12px;height:12px;"></span>Red — significant gap</div>
+          <div class="legend-item"><span class="rag-dot rag-dot-pending" style="width:12px;height:12px;"></span>Pending</div>
+        </div>
+        <div class="config-wrap"><table class="config-table">${tbl}</table></div>
+      </div>
+    </div>
+
+    <div id="${d.id}-arch" class="sub-panel">
+      <div class="card">
+        <div class="card-title">${d.label} — Target State Architecture</div>
+        <div class="card-sub">The target architecture for ${d.label.toLowerCase()} — the end-to-end flow and the platform capabilities that deliver it.</div>
+        <div class="arch-flow" style="margin-bottom:20px;">
+          <div class="arch-flow-title">End-to-End Flow</div>
+          <div class="arch-steps">${flowHtml}</div>
+        </div>
+        <div class="arch-grid">${cardsHtml}</div>
+      </div>
+    </div>`;
+});
+
+// Simple hex shade helper for flow step variety
+function shade(hex, amt) {
+  const n = parseInt(hex.replace('#',''), 16);
+  let r = Math.min(255, Math.max(0, (n >> 16) + amt));
+  let g = Math.min(255, Math.max(0, ((n >> 8) & 0xFF) + amt));
+  let b = Math.min(255, Math.max(0, (n & 0xFF) + amt));
+  return '#' + ((r<<16)|(g<<8)|b).toString(16).padStart(6,'0');
+}
+
+// ══════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════
+function showPanel(id, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+function navTo(id) {
+  const btns = document.querySelectorAll('.nav-btn');
+  const map = { home:0, heatmap:1, df:2, di:3, ap:4, cm:5, ins:6, howto:7 };
+  showPanel(id, btns[map[id]]);
+  window.scrollTo({top:0});
+}
+function showSub(id, btn, domainId) {
+  const panel = domainId ? document.getElementById(domainId) : btn.closest('.panel');
+  panel.querySelectorAll('.sub-panel').forEach(p => p.classList.remove('active'));
+  panel.querySelectorAll('.sub-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>
